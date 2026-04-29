@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MFG Production Management System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Malgun Gothic', -apple-system, sans-serif; }
+  .card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+  .card-hover:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18); }
+  .icon-bg { transition: all 0.25s ease; }
+  .card-hover:hover .icon-bg { transform: scale(1.08); }
+</style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+
+<div class="max-w-7xl mx-auto px-6 py-12">
+  
+  <!-- Header -->
+  <div class="text-center mb-12">
+    <div class="inline-flex items-center gap-4 mb-3">
+      <div class="text-5xl">🏭</div>
+      <h1 class="text-5xl font-black text-slate-800 tracking-tight">MFG Production Management System</h1>
+    </div>
+    <p class="text-lg text-slate-500 mt-3">Eaton · Pyeongtaek Plant · KTC MFG</p>
+    <div class="mt-4 flex justify-center gap-2 text-xs text-slate-400">
+      <span id="todayDate"></span>
+    </div>
+  </div>
+
+  <!-- App Cards Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <!-- TCP 생산관리시스템 -->
+    <a href="https://eatonmfgkorea-maker.github.io/TCP"
+       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6">
+        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
+          <span class="text-3xl">📊</span>
+        </div>
+        <h3 class="text-2xl font-bold text-white">TCP 생산관리</h3>
+        <p class="text-blue-100 text-sm mt-1">Production Management</p>
+      </div>
+      <div class="p-5">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          1PC, 2PC, Nospin 라인의 생산일지, 비가동, 불량, 재작업, 인원관리
+        </p>
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">github.io/TCP</span>
+          <span class="text-xs font-bold text-blue-600">V082</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- FE 생산관리시스템 -->
+    <a href="https://eatonmfgkorea-maker.github.io/FE"
+       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
+      <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-6">
+        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
+          <span class="text-3xl">📋</span>
+        </div>
+        <h3 class="text-2xl font-bold text-white">FE 생산관리</h3>
+        <p class="text-emerald-100 text-sm mt-1">Front-End Production</p>
+      </div>
+      <div class="p-5">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          LVS, FLVV, GVV, UCC, ICV, FTIV 등 FE 라인의 생산 데이터 입력 및 관리
+        </p>
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">github.io/FE</span>
+          <span class="text-xs font-bold text-emerald-600">V082</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- MFG Report -->
+    <a href="https://eatonmfgkorea-maker.github.io/MFGreport"
+       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
+      <div class="bg-gradient-to-br from-indigo-500 to-purple-700 p-6">
+        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
+          <span class="text-3xl">📈</span>
+        </div>
+        <h3 class="text-2xl font-bold text-white">MFG Report</h3>
+        <p class="text-indigo-100 text-sm mt-1">Comprehensive Dashboard</p>
+      </div>
+      <div class="p-5">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          OEE, FPY, FTFR, 비가동 분석 통합 리포트 — TCP/FE/FTIV 종합 대시보드
+        </p>
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">github.io/MFGreport</span>
+          <span class="text-xs font-bold text-indigo-600">V036</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- 교육일지 -->
+    <a href="https://eatonmfgkorea-maker.github.io/Training"
+       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
+      <div class="bg-gradient-to-br from-amber-500 to-orange-600 p-6">
+        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
+          <span class="text-3xl">📚</span>
+        </div>
+        <h3 class="text-2xl font-bold text-white">공정의 교육일지</h3>
+        <p class="text-amber-100 text-sm mt-1">Training Log</p>
+      </div>
+      <div class="p-5">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          공정별 교육 이력 관리, 인원별 스킬 매트릭스, 교육 일정 추적
+        </p>
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">github.io/Training</span>
+          <span class="text-xs font-bold text-amber-600">v5</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- FTFR -->
+    <a href="https://eatonmfgkorea-maker.github.io/FTFR"
+       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
+      <div class="bg-gradient-to-br from-rose-500 to-pink-700 p-6">
+        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
+          <span class="text-3xl">🎯</span>
+        </div>
+        <h3 class="text-2xl font-bold text-white">FTFR 계산</h3>
+        <p class="text-rose-100 text-sm mt-1">First Time Right Calculator</p>
+      </div>
+      <div class="p-5">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          1차 직행률(FTFR) PPM 단위 계산 도구, 라인/공정별 분석
+        </p>
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-400">github.io/FTFR</span>
+          <span class="text-xs font-bold text-rose-600">V006</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- 빈 카드 (향후 확장용) -->
+    <div class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center min-h-[280px]">
+      <div class="text-center text-slate-400">
+        <div class="text-4xl mb-2">➕</div>
+        <p class="text-sm">신규 앱 추가 예정</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="mt-16 text-center text-xs text-slate-400">
+    <p>앱 사용 후 브라우저 뒤로가기(←)로 메인으로 돌아오세요.</p>
+    <p class="mt-1">© Eaton Pyeongtaek Plant · MFG Engineering</p>
+  </div>
+
+</div>
+
+<script>
+  // 오늘 날짜 표시
+  const today = new Date();
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  document.getElementById('todayDate').textContent = 
+    `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 (${days[today.getDay()]})`;
+</script>
+
+</body>
+</html>
