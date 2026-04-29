@@ -6,161 +6,200 @@
 <title>MFG Production Management System</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body { font-family: 'Malgun Gothic', -apple-system, sans-serif; }
-  .card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-  .card-hover:hover { transform: translateY(-6px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18); }
-  .icon-bg { transition: all 0.25s ease; }
-  .card-hover:hover .icon-bg { transform: scale(1.08); }
+  body {
+    font-family: 'Pretendard', 'Malgun Gothic', -apple-system, sans-serif;
+    background: #0a0e1a;
+    background-image:
+      radial-gradient(at 15% 20%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+      radial-gradient(at 85% 10%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 80%, rgba(14, 165, 233, 0.1) 0px, transparent 50%);
+    min-height: 100vh;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent-glow);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+  .card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .card:hover::before { opacity: 1; }
+  .card:hover .icon-wrap { transform: scale(1.1) rotate(-3deg); }
+  .card:hover .arrow-go { transform: translateX(4px); opacity: 1; }
+  .icon-wrap { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+  .arrow-go { transition: all 0.3s ease; opacity: 0.6; }
+  .card-blue { --accent: #3b82f6; --accent-glow: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.18), transparent 60%); }
+  .card-emerald { --accent: #10b981; --accent-glow: radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.18), transparent 60%); }
+  .card-violet { --accent: #8b5cf6; --accent-glow: radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.18), transparent 60%); }
+  .card-amber { --accent: #f59e0b; --accent-glow: radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.18), transparent 60%); }
+  .card-rose { --accent: #f43f5e; --accent-glow: radial-gradient(circle at 0% 0%, rgba(244, 63, 94, 0.18), transparent 60%); }
+  .accent-line {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .icon-svg { color: var(--accent); }
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(2deg); }
+  }
+  .floating-orb {
+    position: absolute; border-radius: 50%; filter: blur(60px);
+    opacity: 0.3; animation: float 8s ease-in-out infinite; pointer-events: none;
+  }
+  .title-gradient {
+    background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 50%, #c7d2fe 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .pulse-dot {
+    width: 8px; height: 8px; background: #10b981; border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
 </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+<body class="min-h-screen overflow-x-hidden">
 
-<div class="max-w-7xl mx-auto px-6 py-12">
-  
-  <!-- Header -->
-  <div class="text-center mb-12">
-    <div class="inline-flex items-center gap-4 mb-3">
-      <div class="text-5xl">🏭</div>
-      <h1 class="text-5xl font-black text-slate-800 tracking-tight">MFG Production Management System</h1>
+<div class="floating-orb" style="background: #3b82f6; width: 300px; height: 300px; top: 10%; left: -100px;"></div>
+<div class="floating-orb" style="background: #8b5cf6; width: 400px; height: 400px; top: 50%; right: -150px; animation-delay: -3s;"></div>
+<div class="floating-orb" style="background: #06b6d4; width: 350px; height: 350px; bottom: 0; left: 30%; animation-delay: -5s;"></div>
+
+<div class="fixed inset-0 grid-pattern pointer-events-none opacity-50"></div>
+
+<div class="relative max-w-7xl mx-auto px-6 py-16">
+
+  <div class="text-center mb-16 relative">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6">
+      <span class="pulse-dot"></span>
+      <span class="text-sm text-slate-300 font-medium">Production System Online</span>
     </div>
-    <p class="text-lg text-slate-500 mt-3">Eaton · Pyeongtaek Plant · KTC MFG</p>
-    <div class="mt-4 flex justify-center gap-2 text-xs text-slate-400">
+    <h1 class="text-6xl md:text-7xl font-black tracking-tight title-gradient mb-4 leading-tight">
+      MFG Production<br/>Management System
+    </h1>
+    <div class="flex items-center justify-center gap-3 text-sm text-slate-400 mt-6">
+      <span class="font-semibold tracking-wider">EATON</span>
+      <span class="w-1 h-1 rounded-full bg-slate-500"></span>
+      <span>Pyeongtaek Plant</span>
+      <span class="w-1 h-1 rounded-full bg-slate-500"></span>
       <span id="todayDate"></span>
     </div>
   </div>
 
-  <!-- App Cards Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    <!-- TCP 생산관리시스템 -->
-    <a href="https://eatonmfgkorea-maker.github.io/TCP"
-       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
-      <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6">
-        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
-          <span class="text-3xl">📊</span>
+    <a href="https://eatonmfgkorea-maker.github.io/TCP" class="card card-blue rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"/></svg>
         </div>
-        <h3 class="text-2xl font-bold text-white">TCP 생산관리</h3>
-        <p class="text-blue-100 text-sm mt-1">Production Management</p>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </div>
-      <div class="p-5">
-        <p class="text-sm text-slate-600 leading-relaxed">
-          1PC, 2PC, Nospin 라인의 생산일지, 비가동, 불량, 재작업, 인원관리
-        </p>
-        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-mono text-slate-400">github.io/TCP</span>
-          <span class="text-xs font-bold text-blue-600">V082</span>
-        </div>
-      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">TCP 생산관리</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">TCP 라인의 생산일지, 불량, 재작업, 비가동, 인원 관리</p>
     </a>
 
-    <!-- FE 생산관리시스템 -->
-    <a href="https://eatonmfgkorea-maker.github.io/FE"
-       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
-      <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-6">
-        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
-          <span class="text-3xl">📋</span>
+    <a href="https://eatonmfgkorea-maker.github.io/FE" class="card card-emerald rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
         </div>
-        <h3 class="text-2xl font-bold text-white">FE 생산관리</h3>
-        <p class="text-emerald-100 text-sm mt-1">Front-End Production</p>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </div>
-      <div class="p-5">
-        <p class="text-sm text-slate-600 leading-relaxed">
-          LVS, FLVV, GVV, UCC, ICV, FTIV 등 FE 라인의 생산 데이터 입력 및 관리
-        </p>
-        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-mono text-slate-400">github.io/FE</span>
-          <span class="text-xs font-bold text-emerald-600">V082</span>
-        </div>
-      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">FE 생산관리</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">FE 라인의 생산일지, 불량, 재작업, 비가동, 인원 관리</p>
     </a>
 
-    <!-- MFG Report -->
-    <a href="https://eatonmfgkorea-maker.github.io/MFGreport"
-       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
-      <div class="bg-gradient-to-br from-indigo-500 to-purple-700 p-6">
-        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
-          <span class="text-3xl">📈</span>
+    <a href="https://eatonmfgkorea-maker.github.io/MFGreport" class="card card-violet rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
         </div>
-        <h3 class="text-2xl font-bold text-white">MFG Report</h3>
-        <p class="text-indigo-100 text-sm mt-1">Comprehensive Dashboard</p>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </div>
-      <div class="p-5">
-        <p class="text-sm text-slate-600 leading-relaxed">
-          OEE, FPY, FTFR, 비가동 분석 통합 리포트 — TCP/FE/FTIV 종합 대시보드
-        </p>
-        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-mono text-slate-400">github.io/MFGreport</span>
-          <span class="text-xs font-bold text-indigo-600">V036</span>
-        </div>
-      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">MFG Report</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">OEE, 불량, 재작업, 비가동 등 통합 데이터 관리</p>
     </a>
 
-    <!-- 교육일지 -->
-    <a href="https://eatonmfgkorea-maker.github.io/Training"
-       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
-      <div class="bg-gradient-to-br from-amber-500 to-orange-600 p-6">
-        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
-          <span class="text-3xl">📚</span>
+    <a href="https://eatonmfgkorea-maker.github.io/Training" class="card card-amber rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 000 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/></svg>
         </div>
-        <h3 class="text-2xl font-bold text-white">공정의 교육일지</h3>
-        <p class="text-amber-100 text-sm mt-1">Training Log</p>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </div>
-      <div class="p-5">
-        <p class="text-sm text-slate-600 leading-relaxed">
-          공정별 교육 이력 관리, 인원별 스킬 매트릭스, 교육 일정 추적
-        </p>
-        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-mono text-slate-400">github.io/Training</span>
-          <span class="text-xs font-bold text-amber-600">v5</span>
-        </div>
-      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">교육일지</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">공정별 교육 이력 관리, 스킬 매트릭스, 일정 관리</p>
     </a>
 
-    <!-- FTFR -->
-    <a href="https://eatonmfgkorea-maker.github.io/FTFR"
-       class="card-hover bg-white rounded-2xl overflow-hidden border border-slate-200 group">
-      <div class="bg-gradient-to-br from-rose-500 to-pink-700 p-6">
-        <div class="icon-bg inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-xl backdrop-blur mb-3">
-          <span class="text-3xl">🎯</span>
+    <a href="https://eatonmfgkorea-maker.github.io/FTFR" class="card card-rose rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/></svg>
         </div>
-        <h3 class="text-2xl font-bold text-white">FTFR 계산</h3>
-        <p class="text-rose-100 text-sm mt-1">First Time Right Calculator</p>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </div>
-      <div class="p-5">
-        <p class="text-sm text-slate-600 leading-relaxed">
-          1차 직행률(FTFR) PPM 단위 계산 도구, 라인/공정별 분석
-        </p>
-        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-mono text-slate-400">github.io/FTFR</span>
-          <span class="text-xs font-bold text-rose-600">V006</span>
-        </div>
-      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">FTFR</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">1차 직행률 PPM 단위 계산 도구, 라인/공정별 분석</p>
     </a>
 
-    <!-- 빈 카드 (향후 확장용) -->
-    <div class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center min-h-[280px]">
-      <div class="text-center text-slate-400">
-        <div class="text-4xl mb-2">➕</div>
-        <p class="text-sm">신규 앱 추가 예정</p>
+    <div class="rounded-3xl p-7 border-2 border-dashed flex flex-col items-center justify-center text-center min-h-[220px]" style="border-color: rgba(255,255,255,0.1);">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+        <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
       </div>
+      <p class="text-slate-500 text-sm font-medium">신규 앱 추가 예정</p>
+      <p class="text-slate-600 text-xs mt-1">Coming Soon</p>
     </div>
 
   </div>
 
-  <!-- Footer -->
-  <div class="mt-16 text-center text-xs text-slate-400">
-    <p>앱 사용 후 브라우저 뒤로가기(←)로 메인으로 돌아오세요.</p>
-    <p class="mt-1">© Eaton Pyeongtaek Plant · MFG Engineering</p>
+  <div class="mt-20 text-center">
+    <p class="text-xs text-slate-600">© Eaton Pyeongtaek Plant · MFG Engineering</p>
   </div>
 
 </div>
 
 <script>
-  // 오늘 날짜 표시
   const today = new Date();
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const days = ['일','월','화','수','목','금','토'];
   document.getElementById('todayDate').textContent = 
-    `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 (${days[today.getDay()]})`;
+    `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')} ${days[today.getDay()]}`;
 </script>
 
 </body>
