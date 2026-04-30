@@ -54,6 +54,7 @@
   .card-violet { --accent: #8b5cf6; --accent-glow: radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.18), transparent 60%); }
   .card-amber { --accent: #f59e0b; --accent-glow: radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.18), transparent 60%); }
   .card-rose { --accent: #f43f5e; --accent-glow: radial-gradient(circle at 0% 0%, rgba(244, 63, 94, 0.18), transparent 60%); }
+  .card-cyan { --accent: #06b6d4; --accent-glow: radial-gradient(circle at 0% 0%, rgba(6, 182, 212, 0.18), transparent 60%); }
   .accent-line {
     position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, var(--accent), transparent);
@@ -179,13 +180,17 @@
       <p class="text-sm text-slate-400 leading-relaxed">1차 직행률 PPM 단위 계산 도구, 라인/공정별 분석</p>
     </a>
 
-    <div class="rounded-3xl p-7 border-2 border-dashed flex flex-col items-center justify-center text-center min-h-[220px]" style="border-color: rgba(255,255,255,0.1);">
-      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
-        <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+    <a href="https://eatonmfgkorea-maker.github.io/WorkingHours/" class="card card-cyan rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </div>
-      <p class="text-slate-500 text-sm font-medium">신규 앱 추가 예정</p>
-      <p class="text-slate-600 text-xs mt-1">Coming Soon</p>
-    </div>
+      <h3 class="text-2xl font-bold text-white mb-3">Working Hours</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">TCP/FE 작업시간 및 순수 OT 시간</p>
+    </a>
 
   </div>
 
