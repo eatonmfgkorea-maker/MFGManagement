@@ -94,6 +94,44 @@
 </head>
 <body class="min-h-screen overflow-x-hidden">
 
+<script>
+// Edge 브라우저 차단 (Chrome 전용)
+(function() {
+  var ua = navigator.userAgent || '';
+  if (ua.indexOf('Edg/') !== -1 || ua.indexOf('Edge/') !== -1 || ua.indexOf('EdgA/') !== -1 || ua.indexOf('EdgiOS/') !== -1) {
+    document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Pretendard,Malgun Gothic,-apple-system,sans-serif;color:#fff;background:#0a0e1a">'
+      + '<div style="max-width:520px;width:100%;text-align:center;padding:48px 32px;background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:24px">'
+      + '<div style="font-size:64px;line-height:1;margin-bottom:24px">⚠️</div>'
+      + '<h1 style="font-size:26px;font-weight:800;margin:0 0 14px 0;color:#fff;letter-spacing:-0.02em">Edge 브라우저는 지원하지 않습니다</h1>'
+      + '<p style="color:#94a3b8;line-height:1.65;font-size:15px;margin:0 0 8px 0">이 시스템은 <span style="color:#fff;font-weight:600">Chrome 브라우저</span>에서만 정상 작동합니다.</p>'
+      + '<p style="color:#94a3b8;line-height:1.65;font-size:14px;margin:0">Edge에서는 일부 기능에 오류가 발생합니다.</p>'
+      + '<div style="margin-top:28px;padding:18px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:14px;text-align:left">'
+      + '<div style="color:#a5b4fc;font-weight:600;font-size:13px;margin-bottom:8px">해결 방법</div>'
+      + '<div style="color:#cbd5e1;font-size:13px;line-height:1.6">아래 버튼으로 URL을 복사한 뒤<br/>Chrome 브라우저에서 붙여넣어 접속해주세요.</div>'
+      + '</div>'
+      + '<button id="copyUrlBtn" style="margin-top:24px;padding:12px 28px;background:#6366f1;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">URL 복사</button>'
+      + '</div>'
+      + '</div>';
+    document.body.style.background = '#0a0e1a';
+    document.body.style.minHeight = '100vh';
+    document.body.style.margin = '0';
+    var btn = document.getElementById('copyUrlBtn');
+    if (btn) {
+      btn.onclick = function() {
+        var url = window.location.href;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function(){ btn.textContent = '✓ URL 복사됨'; btn.style.background = '#10b981'; });
+        } else {
+          var ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          btn.textContent = '✓ URL 복사됨'; btn.style.background = '#10b981';
+        }
+      };
+    }
+    throw new Error('Edge blocked');
+  }
+})();
+</script>
+
 <div class="floating-orb" style="background: #3b82f6; width: 300px; height: 300px; top: 10%; left: -100px;"></div>
 <div class="floating-orb" style="background: #8b5cf6; width: 400px; height: 400px; top: 50%; right: -150px; animation-delay: -3s;"></div>
 <div class="floating-orb" style="background: #06b6d4; width: 350px; height: 350px; bottom: 0; left: 30%; animation-delay: -5s;"></div>
