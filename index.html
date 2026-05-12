@@ -56,6 +56,9 @@
   .card-rose { --accent: #f43f5e; --accent-glow: radial-gradient(circle at 0% 0%, rgba(244, 63, 94, 0.18), transparent 60%); }
   .card-cyan { --accent: #06b6d4; --accent-glow: radial-gradient(circle at 0% 0%, rgba(6, 182, 212, 0.18), transparent 60%); }
   .card-indigo { --accent: #6366f1; --accent-glow: radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.18), transparent 60%); }
+  .card-teal { --accent: #14b8a6; --accent-glow: radial-gradient(circle at 0% 0%, rgba(20, 184, 166, 0.18), transparent 60%); }
+  .card-fuchsia { --accent: #d946ef; --accent-glow: radial-gradient(circle at 0% 0%, rgba(217, 70, 239, 0.18), transparent 60%); }
+  .card-lime { --accent: #84cc16; --accent-glow: radial-gradient(circle at 0% 0%, rgba(132, 204, 22, 0.18), transparent 60%); }
   .accent-line {
     position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, var(--accent), transparent);
@@ -95,10 +98,12 @@
 <body class="min-h-screen overflow-x-hidden">
 
 <script>
-// Edge 브라우저 차단 (Chrome 전용)
+// Edge 브라우저 차단 (데스크탑 Chrome 전용, 모바일은 모두 허용)
 (function() {
   var ua = navigator.userAgent || '';
-  if (ua.indexOf('Edg/') !== -1 || ua.indexOf('Edge/') !== -1 || ua.indexOf('EdgA/') !== -1 || ua.indexOf('EdgiOS/') !== -1) {
+  var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+  var isDesktopEdge = !isMobile && (ua.indexOf('Edg/') !== -1 || ua.indexOf('Edge/') !== -1);
+  if (isDesktopEdge) {
     document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Pretendard,Malgun Gothic,-apple-system,sans-serif;color:#fff;background:#0a0e1a">'
       + '<div style="max-width:520px;width:100%;text-align:center;padding:48px 32px;background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:24px">'
       + '<div style="font-size:64px;line-height:1;margin-bottom:24px">⚠️</div>'
@@ -241,6 +246,42 @@
       </div>
       <h3 class="text-2xl font-bold text-white mb-3">Labor Cost</h3>
       <p class="text-sm text-slate-400 leading-relaxed">인건비 예측(Fcst) 및 실적 모니터링</p>
+    </a>
+
+    <a href="https://eatonkorea.github.io/eatonsio/" class="card card-teal rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(20,184,166,0.12); border: 1px solid rgba(20,184,166,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg>
+        </div>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">SIO</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Safety Improvement Observation · 안전관찰 보고</p>
+    </a>
+
+    <a href="https://forms.gle/Ki8MUNuCzmzXhDSw6" class="card card-fuchsia rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(217,70,239,0.12); border: 1px solid rgba(217,70,239,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
+        </div>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">제안서</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">직원 개선 제안 접수 (Google Form)</p>
+    </a>
+
+    <a href="https://eatonmfgkorea-maker.github.io/estar" class="card card-lime rounded-3xl p-7 group flex flex-col min-h-[220px]">
+      <div class="accent-line"></div>
+      <div class="flex items-start justify-between mb-6">
+        <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(132,204,22,0.12); border: 1px solid rgba(132,204,22,0.25);">
+          <svg class="icon-svg w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+        </div>
+        <svg class="arrow-go w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </div>
+      <h3 class="text-2xl font-bold text-white mb-3">E-Star</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">작업자 전용 E-Star</p>
     </a>
 
   </div>
