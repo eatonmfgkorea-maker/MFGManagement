@@ -164,7 +164,7 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    <a href="https://eatonmfgkorea-maker.github.io/TCP" class="card card-blue rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/TCP" data-protected="true" class="card card-blue rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25);">
@@ -176,7 +176,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">TCP 라인의 생산일지, 불량, 재작업, 비가동, 인원 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/FE" class="card card-emerald rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/FE" data-protected="true" class="card card-emerald rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);">
@@ -188,7 +188,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">FE 라인의 생산일지, 불량, 재작업, 비가동, 인원 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/MFGreport" class="card card-violet rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/MFGreport" data-protected="true" class="card card-violet rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.25);">
@@ -200,7 +200,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">OEE, 불량, 재작업, 비가동 등 통합 데이터 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/Training" class="card card-amber rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/Training" data-protected="true" class="card card-amber rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);">
@@ -212,7 +212,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">공정별 교육 이력 관리, 스킬 매트릭스, 일정 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/FTFR" class="card card-rose rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/FTFR" data-protected="true" class="card card-rose rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.25);">
@@ -224,7 +224,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">1차 직행률 PPM 단위 계산 도구, 라인/공정별 분석</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/WorkingHours/" class="card card-cyan rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/WorkingHours/" data-protected="true" class="card card-cyan rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25);">
@@ -292,11 +292,351 @@
 
 </div>
 
+<!-- ==================== 인증 시스템 ==================== -->
+
+<!-- 우상단 사용자 메뉴 (로그인 시만 표시) -->
+<div id="userMenu" class="hidden fixed top-4 right-4 z-40 items-center gap-2 bg-white/10 backdrop-blur-lg border border-white/15 rounded-full pl-4 pr-2 py-2" style="display:none;">
+  <span class="text-sm text-white">👤 <span id="userName" class="font-medium"></span></span>
+  <button onclick="openManage()" title="사용자 관리" class="text-slate-300 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m18 0h-1.5M5.636 5.636l1.06 1.06m10.608 10.608l1.06 1.06M12 3v1.5m0 15V21m-6.364-1.636l1.06-1.06m10.608-10.608l1.06-1.06M3 12h1.5m15 0H21"/></svg>
+  </button>
+  <button onclick="logout()" title="로그아웃" class="text-slate-300 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+  </button>
+</div>
+
+<!-- 우상단 로그인 버튼 (비로그인 시만 표시) -->
+<div id="loginMenu" class="fixed top-4 right-4 z-40" style="display:none;">
+  <button onclick="showLogin()" class="flex items-center gap-2 bg-white/10 backdrop-blur-lg border border-white/15 rounded-full px-4 py-2 text-sm text-white hover:bg-white/15 transition">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M9 12h12.75m0 0l-3-3m3 3l-3 3"/></svg>
+    <span>로그인</span>
+  </button>
+</div>
+
+<!-- 로그인 모달 -->
+<div id="loginModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 items-center justify-center p-4" style="display:none;">
+  <div class="bg-slate-900 border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/20 border border-blue-400/30 mb-4">
+        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+      </div>
+      <h2 class="text-2xl font-bold text-white">로그인이 필요합니다</h2>
+      <p class="text-sm text-slate-400 mt-2" id="loginSubtitle">계속하려면 ID와 비밀번호를 입력하세요</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm text-slate-300 mb-1.5">ID</label>
+        <input id="loginUserId" type="text" autocomplete="username" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500" placeholder="ID" />
+      </div>
+      <div>
+        <label class="block text-sm text-slate-300 mb-1.5">비밀번호</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500" placeholder="••••••••" />
+      </div>
+      <div id="loginError" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2"></div>
+      <button id="loginBtn" onclick="doLogin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">로그인</button>
+      <button onclick="closeLogin()" class="w-full py-2 text-slate-400 hover:text-white text-sm">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사용자 관리 모달 -->
+<div id="manageModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 items-start justify-center p-4 overflow-y-auto" style="display:none;">
+  <div class="bg-slate-900 border border-white/10 rounded-2xl p-8 w-full max-w-2xl shadow-2xl my-8">
+    <div class="flex justify-between items-center mb-6">
+      <h2 id="manageTitle" class="text-2xl font-bold text-white">👤 내 정보</h2>
+      <button onclick="closeManage()" class="text-slate-400 hover:text-white text-2xl">×</button>
+    </div>
+    
+    <!-- 사용자 목록 (admin 전용) -->
+    <div data-admin-only class="mb-6">
+      <h3 class="text-sm text-slate-300 mb-2 font-medium">사용자 목록</h3>
+      <div id="userList" class="border border-white/10 rounded-lg overflow-hidden">
+        <div class="p-4 text-center text-slate-400 text-sm">로딩 중...</div>
+      </div>
+    </div>
+    
+    <!-- 사용자 추가 (admin 전용) -->
+    <div data-admin-only class="mb-6 p-4 bg-slate-800/50 rounded-lg">
+      <h3 class="text-sm text-slate-300 mb-3 font-medium">➕ 사용자 추가</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <input id="newUserId" type="text" placeholder="ID" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
+        <input id="newUserPwd" type="password" placeholder="비밀번호 (4자 이상)" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
+        <button onclick="addUser()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg">추가</button>
+      </div>
+    </div>
+    
+    <!-- 내 비밀번호 변경 (모두 가능) -->
+    <div class="p-4 bg-slate-800/50 rounded-lg">
+      <h3 class="text-sm text-slate-300 mb-3 font-medium">🔑 내 비밀번호 변경</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input id="myNewPwd" type="password" placeholder="새 비밀번호 (4자 이상)" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500" />
+        <button onclick="changeMyPassword()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg">변경</button>
+      </div>
+    </div>
+    
+    <div id="manageMessage" class="hidden mt-4 text-sm rounded-lg px-3 py-2"></div>
+  </div>
+</div>
+
 <script>
+  // ==================== 기존 날짜 표시 ====================
   const today = new Date();
   const days = ['일','월','화','수','목','금','토'];
   document.getElementById('todayDate').textContent = 
     `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')} ${days[today.getDay()]}`;
+
+  // ==================== 인증 시스템 ====================
+  const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyhM1MJAEflRpDIKa0vWKQdcY4h1WVkI8KZqGuKjgOQDCt7iRwcsexXSmhtSdTwwepH/exec';
+  
+  // 사용자 관리 권한이 있는 ID 목록 (이 사용자들만 사용자 추가/삭제/타인 비번 재설정 가능)
+  const ADMIN_USERS = ['이세민'];
+  
+  let pendingUrl = null; // 로그인 후 이동할 URL
+  
+  // 토큰 유효성 체크
+  function isAuthed() {
+    const token = localStorage.getItem('mfg_auth_token');
+    const expiry = parseInt(localStorage.getItem('mfg_auth_expiry') || '0');
+    return token && Date.now() < expiry;
+  }
+  
+  // 관리자 여부 체크
+  function isAdmin() {
+    return ADMIN_USERS.includes(localStorage.getItem('mfg_auth_user'));
+  }
+  
+  // GAS 통신 (text/plain → CORS preflight 회피)
+  async function callAuth(action, params) {
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...params })
+      });
+      return await res.json();
+    } catch (e) {
+      return { ok: false, error: '네트워크 오류: ' + e.message };
+    }
+  }
+  
+  // 페이지 로드 시 로그인 상태 반영
+  function refreshUI() {
+    const userMenu = document.getElementById('userMenu');
+    const loginMenu = document.getElementById('loginMenu');
+    if (isAuthed()) {
+      document.getElementById('userName').textContent = localStorage.getItem('mfg_auth_user') || '';
+      userMenu.style.display = 'flex';
+      loginMenu.style.display = 'none';
+    } else {
+      userMenu.style.display = 'none';
+      loginMenu.style.display = 'block';
+    }
+  }
+  
+  // 보호 카드 클릭 가로채기
+  document.querySelectorAll('a[data-protected="true"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      if (isAuthed()) return; // 토큰 있으면 그대로 이동
+      e.preventDefault();
+      pendingUrl = a.href;
+      showLogin();
+    });
+  });
+  
+  // 로그인 모달
+  function showLogin() {
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('loginUserId').value = '';
+    document.getElementById('loginPassword').value = '';
+    const modal = document.getElementById('loginModal');
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('loginUserId').focus(), 100);
+  }
+  function closeLogin() {
+    document.getElementById('loginModal').style.display = 'none';
+    pendingUrl = null;
+  }
+  
+  async function doLogin() {
+    const userId = document.getElementById('loginUserId').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+    
+    if (!userId || !password) {
+      errEl.textContent = 'ID와 비밀번호를 입력해주세요.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = '로그인 중...';
+    errEl.classList.add('hidden');
+    
+    const res = await callAuth('login', { userId, password });
+    
+    btn.disabled = false;
+    btn.textContent = '로그인';
+    
+    if (!res.ok) {
+      errEl.textContent = res.error || '로그인 실패';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    
+    localStorage.setItem('mfg_auth_token', res.token);
+    localStorage.setItem('mfg_auth_user', res.userId);
+    localStorage.setItem('mfg_auth_expiry', String(res.expiresAt));
+    
+    const redirectTo = pendingUrl; // closeLogin 전에 보관
+    closeLogin();
+    refreshUI();
+    
+    if (redirectTo) {
+      window.location.href = redirectTo;
+    }
+  }
+  
+  function logout() {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
+    localStorage.removeItem('mfg_auth_token');
+    localStorage.removeItem('mfg_auth_user');
+    localStorage.removeItem('mfg_auth_expiry');
+    refreshUI();
+  }
+  
+  // Enter 키로 로그인
+  document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('loginUserId').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+  });
+  
+  // ==================== 사용자 관리 ====================
+  async function openManage() {
+    if (!isAuthed()) return;
+    document.getElementById('manageModal').style.display = 'flex';
+    document.getElementById('manageMessage').classList.add('hidden');
+    
+    // admin 전용 섹션 표시/숨김
+    const adminOnly = document.querySelectorAll('[data-admin-only]');
+    const title = document.getElementById('manageTitle');
+    if (isAdmin()) {
+      adminOnly.forEach(el => el.style.display = '');
+      title.textContent = '👥 사용자 관리';
+      await loadUsers();
+    } else {
+      adminOnly.forEach(el => el.style.display = 'none');
+      title.textContent = '👤 내 정보';
+    }
+  }
+  function closeManage() {
+    document.getElementById('manageModal').style.display = 'none';
+  }
+  
+  function showManageMsg(msg, isError) {
+    const el = document.getElementById('manageMessage');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    if (isError) {
+      el.className = 'mt-4 text-sm rounded-lg px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400';
+    } else {
+      el.className = 'mt-4 text-sm rounded-lg px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400';
+    }
+    setTimeout(() => el.classList.add('hidden'), 4000);
+  }
+  
+  async function loadUsers() {
+    const listEl = document.getElementById('userList');
+    listEl.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">로딩 중...</div>';
+    
+    const userId = localStorage.getItem('mfg_auth_user');
+    const res = await callAuth('list', { userId });
+    
+    if (!res.ok) {
+      listEl.innerHTML = '<div class="p-4 text-center text-red-400 text-sm">' + (res.error || '로딩 실패') + '</div>';
+      return;
+    }
+    
+    if (!res.users || res.users.length === 0) {
+      listEl.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">사용자가 없습니다.</div>';
+      return;
+    }
+    
+    const myId = localStorage.getItem('mfg_auth_user');
+    listEl.innerHTML = res.users.map(u => {
+      const isMe = u.id === myId;
+      const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString('ko-KR') : '-';
+      return `
+        <div class="flex items-center justify-between p-3 border-b border-white/5 last:border-b-0">
+          <div class="flex-1 min-w-0">
+            <div class="text-white text-sm font-medium">${u.id} ${isMe ? '<span class="text-xs text-blue-400 ml-1">(나)</span>' : ''}</div>
+            <div class="text-xs text-slate-400">마지막 로그인: ${lastLogin}</div>
+          </div>
+          <div class="flex gap-1">
+            <button onclick="resetPassword('${u.id}')" class="px-2 py-1 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded">비밀번호 재설정</button>
+            ${!isMe ? `<button onclick="deleteUser('${u.id}')" class="px-2 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded">삭제</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  async function addUser() {
+    if (!isAdmin()) { showManageMsg('권한이 없습니다.', true); return; }
+    const newId = document.getElementById('newUserId').value.trim();
+    const newPwd = document.getElementById('newUserPwd').value;
+    if (!newId || !newPwd) {
+      showManageMsg('ID와 비밀번호를 입력해주세요.', true);
+      return;
+    }
+    const userId = localStorage.getItem('mfg_auth_user');
+    const res = await callAuth('add', { userId, newUserId: newId, newPassword: newPwd });
+    if (!res.ok) {
+      showManageMsg(res.error || '추가 실패', true);
+      return;
+    }
+    document.getElementById('newUserId').value = '';
+    document.getElementById('newUserPwd').value = '';
+    showManageMsg(`'${newId}' 사용자 추가 완료`, false);
+    await loadUsers();
+  }
+  
+  async function resetPassword(targetId) {
+    if (!isAdmin()) { showManageMsg('권한이 없습니다.', true); return; }
+    const newPwd = prompt(`'${targetId}' 사용자의 새 비밀번호를 입력하세요 (4자 이상):`);
+    if (!newPwd) return;
+    if (newPwd.length < 4) { alert('비밀번호는 4자 이상이어야 합니다.'); return; }
+    const userId = localStorage.getItem('mfg_auth_user');
+    const res = await callAuth('update', { userId, targetUserId: targetId, newPassword: newPwd });
+    if (!res.ok) { showManageMsg(res.error || '변경 실패', true); return; }
+    showManageMsg(`'${targetId}' 비밀번호 변경 완료`, false);
+  }
+  
+  async function changeMyPassword() {
+    const newPwd = document.getElementById('myNewPwd').value;
+    if (!newPwd) { showManageMsg('새 비밀번호를 입력해주세요.', true); return; }
+    if (newPwd.length < 4) { showManageMsg('비밀번호는 4자 이상이어야 합니다.', true); return; }
+    const userId = localStorage.getItem('mfg_auth_user');
+    const res = await callAuth('update', { userId, targetUserId: userId, newPassword: newPwd });
+    if (!res.ok) { showManageMsg(res.error || '변경 실패', true); return; }
+    document.getElementById('myNewPwd').value = '';
+    showManageMsg('비밀번호 변경 완료', false);
+  }
+  
+  async function deleteUser(targetId) {
+    if (!isAdmin()) { showManageMsg('권한이 없습니다.', true); return; }
+    if (!confirm(`'${targetId}' 사용자를 삭제하시겠습니까?`)) return;
+    const userId = localStorage.getItem('mfg_auth_user');
+    const res = await callAuth('delete', { userId, targetUserId: targetId });
+    if (!res.ok) { showManageMsg(res.error || '삭제 실패', true); return; }
+    showManageMsg(`'${targetId}' 삭제 완료`, false);
+    await loadUsers();
+  }
+  
+  // 초기 UI 반영
+  refreshUI();
 </script>
 
 </body>
