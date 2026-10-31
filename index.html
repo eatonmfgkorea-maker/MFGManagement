@@ -84,6 +84,35 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+  .app-tag { position:absolute; top:18px; right:52px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); color:#94a3b8; background:rgba(15,23,42,0.6); }
+  .app-tag.ok { color:#6ee7b7; border-color:rgba(16,185,129,0.35); }
+  .app-tag.no { color:#fca5a5; border-color:rgba(239,68,68,0.35); }
+  .card.locked { opacity:0.45; }
+  #acct { position:fixed; top:16px; right:16px; z-index:50; display:flex; gap:8px; align-items:center; font-size:13px; }
+  #acct button { padding:7px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.15); background:rgba(15,23,42,0.75); color:#e2e8f0; cursor:pointer; font-family:inherit; }
+  #acct button:hover { border-color:rgba(255,255,255,0.35); }
+  #acctMenu { position:fixed; top:56px; right:16px; z-index:51; min-width:200px; background:#0f172a; border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:6px; display:none; }
+  #acctMenu button { display:block; width:100%; text-align:left; padding:9px 12px; border:0; background:none; color:#e2e8f0; border-radius:8px; cursor:pointer; font-size:13px; font-family:inherit; }
+  #acctMenu button:hover { background:rgba(255,255,255,0.06); }
+  .pm-back { position:fixed; inset:0; z-index:100; background:rgba(2,6,23,0.75); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .pm { background:#0f172a; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:24px; width:100%; max-width:380px; color:#e2e8f0; max-height:92vh; overflow:auto; }
+  .pm.wide { max-width:760px; }
+  .pm h2 { font-size:18px; font-weight:700; color:#fff; margin:0 0 4px; }
+  .pm p.sub { font-size:13px; color:#94a3b8; margin:0 0 16px; line-height:1.6; }
+  .pm input[type=text], .pm input[type=password] { width:100%; height:38px; padding:0 12px; border-radius:8px; border:1px solid #334155; background:#020617; color:#e2e8f0; font-size:14px; font-family:inherit; }
+  .pm .col { display:flex; flex-direction:column; gap:8px; }
+  .pm .btn-p { height:38px; border:0; border-radius:8px; background:#2563eb; color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
+  .pm .btn-p:disabled { opacity:0.6; }
+  .pm .btn-l { border:0; background:none; color:#94a3b8; font-size:12px; cursor:pointer; padding:6px; font-family:inherit; }
+  .pm .msg { font-size:13px; min-height:18px; }
+  .pm .msg.err { color:#fca5a5; } .pm .msg.ok { color:#6ee7b7; }
+  .pm table { width:100%; border-collapse:collapse; font-size:13px; }
+  .pm th { text-align:center; font-weight:600; color:#94a3b8; font-size:12px; padding:6px 4px; border-bottom:1px solid #1e293b; white-space:nowrap; }
+  .pm th:first-child, .pm td:first-child { text-align:left; }
+  .pm td { padding:7px 4px; border-bottom:1px solid #1e293b; text-align:center; white-space:nowrap; }
+  .pm td input[type=checkbox] { width:16px; height:16px; cursor:pointer; accent-color:#3b82f6; }
+  .pm .lnk { border:0; background:none; cursor:pointer; font-size:12px; font-family:inherit; padding:2px 4px; }
+  .pm .tbl-wrap { overflow-x:auto; }
   .pulse-dot {
     width: 8px; height: 8px; background: #10b981; border-radius: 50%;
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
@@ -153,7 +182,7 @@
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    <a href="https://eatonmfgkorea-maker.github.io/TCP" class="card card-blue rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/TCP" data-app="tcp" class="card card-blue rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25);">
@@ -165,7 +194,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">TCP 라인의 생산일지, 불량, 재작업, 비가동, 인원 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/FE" class="card card-emerald rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/FE" data-app="fe" class="card card-emerald rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);">
@@ -177,7 +206,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">FE 라인의 생산일지, 불량, 재작업, 비가동, 인원 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/MFGreport" class="card card-violet rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/MFGreport" data-app="mfg" class="card card-violet rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.25);">
@@ -189,7 +218,7 @@
       <p class="text-sm text-slate-400 leading-relaxed">OEE, 불량, 재작업, 비가동 등 통합 데이터 관리</p>
     </a>
 
-    <a href="https://eatonmfgkorea-maker.github.io/Training" class="card card-amber rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/Training" data-app="training" class="card card-amber rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);">
@@ -215,7 +244,7 @@
 
 
 
-    <a href="https://eatonmfgkorea-maker.github.io/labor/" class="card card-indigo rounded-3xl p-7 group flex flex-col min-h-[220px]">
+    <a href="https://eatonmfgkorea-maker.github.io/labor/" data-app="labor" class="card card-indigo rounded-3xl p-7 group flex flex-col min-h-[220px]">
       <div class="accent-line"></div>
       <div class="flex items-start justify-between mb-6">
         <div class="icon-wrap w-14 h-14 rounded-2xl flex items-center justify-center" style="background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25);">
@@ -271,7 +300,183 @@
 
 </div>
 
-<!-- ==================== 인증 시스템 ==================== -->
+<!-- ==================== 통합 로그인 (포털은 로그인 없이 열림 — 로그인하면 아래 앱들이 바로 열림) ==================== -->
+<div id="acct"></div>
+<div id="acctMenu"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  var SB_URL = 'https://tmbeaswlpvsyjehacgsa.supabase.co', SB_KEY = 'sb_publishable_OM6ITpYn8LYPWXXhwdA4kQ_HuAyAxV9';
+  var APPS = [['tcp', 'TCP'], ['fe', 'FE'], ['mfg', 'MFG Report'], ['training', '교육일지'], ['labor', 'Labor Cost']];
+  var DEF_APPS = ['tcp', 'fe', 'mfg', 'training'];
+  // 로그인 정보: 다른 MFG 앱과 같은 저장소(IndexedDB)를 써서 한 번 로그인하면 모두 공유
+  var authStore = (function () {
+    var dbp = null;
+    function db() { if (!dbp) dbp = new Promise(function (res, rej) { var r = indexedDB.open('mfg_sb_auth', 1); r.onupgradeneeded = function () { r.result.createObjectStore('kv'); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); return dbp; }
+    function run(mode, fn) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction('kv', mode), q = fn(t.objectStore('kv')); t.oncomplete = function () { res(q ? q.result : undefined); }; t.onerror = function () { rej(t.error); }; }); }); }
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    return {
+      getItem: function (k) { return run('readonly', function (s) { return s.get(k); }).then(function (v) { return v != null ? v : lsGet(k); }, function () { return lsGet(k); }); },
+      setItem: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} return run('readwrite', function (s) { return s.put(v, k); }).catch(function () {}); },
+      removeItem: function (k) { try { localStorage.removeItem(k); } catch (e) {} return run('readwrite', function (s) { return s.delete(k); }).catch(function () {}); }
+    };
+  })();
+  var client = null, me = null;
+  try { client = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'mfg-sb-test-auth', storage: authStore } }); } catch (e) { console.warn('로그인 모듈 오류', e); }
+  function $(id) { return document.getElementById(id); }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function errText(e) { var m = (e && (e.message || e.error_description)) || String(e || '오류'); return /invalid login credentials/i.test(m) ? '이름 또는 비밀번호가 올바르지 않습니다.' : m; }
+  function idToEmail(id) { id = String(id || '').trim(); if (id.indexOf('@') >= 0) return id.toLowerCase(); var b = new TextEncoder().encode(id), h = ''; for (var i = 0; i < b.length; i++) h += (b[i] < 16 ? '0' : '') + b[i].toString(16); return 'u-' + h + '@mfg.local'; }
+  function modal(html, wide) { closeModal(); var d = document.createElement('div'); d.className = 'pm-back'; d.id = 'pmBack'; d.innerHTML = '<div class="pm' + (wide ? ' wide' : '') + '">' + html + '</div>'; document.body.appendChild(d); d.addEventListener('mousedown', function (ev) { if (ev.target === d) closeModal(); }); return d; }
+  function closeModal() { var d = $('pmBack'); if (d) d.remove(); }
+  function say(id, t, ok) { var el = $(id); if (el) { el.textContent = t || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); } }
+
+  // ----- 화면: 오른쪽 위 계정 표시 + 카드 권한 표시 -----
+  function paint() {
+    var a = $('acct');
+    if (!me) { a.innerHTML = '<button id="acctLogin" type="button">로그인</button>'; $('acctLogin').onclick = openLogin; }
+    else { a.innerHTML = '<button id="acctBtn" type="button">👤 ' + esc(me.name) + (me.isAdmin ? ' · 관리자' : '') + ' ▾</button>'; $('acctBtn').onclick = toggleMenu; }
+    document.querySelectorAll('a.card[data-app]').forEach(function (c) {
+      var k = c.getAttribute('data-app'), tag = c.querySelector('.app-tag');
+      if (!tag) { tag = document.createElement('span'); tag.className = 'app-tag'; c.appendChild(tag); }
+      if (!me) { tag.className = 'app-tag'; tag.textContent = '🔒 로그인'; c.classList.remove('locked'); }
+      else if (me.apps.indexOf(k) >= 0) { tag.className = 'app-tag ok'; tag.textContent = '사용 가능'; c.classList.remove('locked'); }
+      else { tag.className = 'app-tag no'; tag.textContent = k === 'mfg' ? '게스트 보기' : '권한 없음'; c.classList.toggle('locked', k !== 'mfg'); }
+    });
+  }
+  function toggleMenu() {
+    var m = $('acctMenu');
+    if (m.style.display === 'block') { m.style.display = 'none'; return; }
+    m.innerHTML = '<button type="button" id="mPw">비밀번호 변경</button>' + (me.isAdmin ? '<button type="button" id="mUsers">👥 사용자 · 앱 권한 관리</button>' : '') + '<button type="button" id="mOut">로그아웃 (모든 앱)</button>';
+    m.style.display = 'block';
+    $('mPw').onclick = function () { m.style.display = 'none'; openPwChange(false); };
+    if ($('mUsers')) $('mUsers').onclick = function () { m.style.display = 'none'; openUsers(); };
+    $('mOut').onclick = function () { m.style.display = 'none'; if (!confirm('로그아웃 하시겠습니까?\n(모든 MFG 앱에서 함께 로그아웃됩니다)')) return; client.auth.signOut().then(function () { me = null; paint(); }); };
+  }
+  document.addEventListener('mousedown', function (ev) { var m = $('acctMenu'); if (m && m.style.display === 'block' && !m.contains(ev.target) && ev.target.id !== 'acctBtn') m.style.display = 'none'; });
+
+  // ----- 로그인 -----
+  function loadMe(email, pw) {
+    return client.rpc('my_account').then(function (r) {
+      if (r.error) throw r.error;
+      var a = r.data;
+      if (!a || !a.role) { return client.auth.signOut().then(function () { throw { message: '승인되지 않은 계정입니다. 관리자에게 요청하세요.' }; }); }
+      me = { email: email, name: a.login_id || email, role: a.role, isAdmin: a.role === 'admin', apps: Array.isArray(a.apps) ? a.apps : DEF_APPS, mustChange: !!a.must_change };
+      paint();
+      if (me.mustChange) openPwChange(true, pw);
+      else if (location.hash === '#users' && me.isAdmin) openUsers();
+    });
+  }
+  function openLogin() {
+    var last = ''; try { last = localStorage.getItem('mfg-sb-test-last-email') || ''; if (/@mfg\.local$/.test(last)) last = ''; } catch (e) {}
+    modal('<h2>로그인</h2><p class="sub">한 번 로그인하면 TCP · FE · MFG Report · 교육일지 · Labor Cost가 바로 열립니다 (권한 있는 앱만)</p>' +
+      '<form id="lgForm" class="col"><input id="lgId" type="text" placeholder="이름" autocomplete="username" value="' + esc(last) + '"><input id="lgPw" type="password" placeholder="비밀번호" autocomplete="current-password"><button class="btn-p" id="lgBtn" type="submit">로그인</button><div id="lgMsg" class="msg"></div></form>');
+    ($('lgId').value ? $('lgPw') : $('lgId')).focus();
+    $('lgForm').onsubmit = function (ev) {
+      ev.preventDefault();
+      var id = $('lgId').value.trim(), pw = $('lgPw').value;
+      if (!id || !pw) return say('lgMsg', '이름과 비밀번호를 입력하세요.');
+      $('lgBtn').disabled = true; say('lgMsg', '확인 중…', true);
+      var em = idToEmail(id);
+      client.auth.signInWithPassword({ email: em, password: pw }).then(function (r) {
+        if (r.error) throw r.error;
+        try { localStorage.setItem('mfg-sb-test-last-email', id); } catch (e) {}
+        closeModal();
+        return loadMe(em, pw);
+      }).catch(function (e) { say('lgMsg', errText(e)); var b = $('lgBtn'); if (b) b.disabled = false; });
+    };
+  }
+  // 비밀번호 변경 (first: 처음 접속 — 바꿔야 계속)
+  function openPwChange(first, oldPw) {
+    modal('<h2>' + (first ? '처음 접속입니다' : '비밀번호 변경') + '</h2><p class="sub">' + (first ? '<b style="color:#fff">' + esc(me.name) + '</b>님, 사용할 비밀번호로 바꿔 주세요.' : '새 비밀번호는 6자 이상') + '</p>' +
+      '<form id="pwForm" class="col">' + (oldPw ? '' : '<input id="pwO" type="password" placeholder="' + (first ? '받은 초기 비밀번호' : '현재 비밀번호') + '" autocomplete="current-password">') +
+      '<input id="pwN" type="password" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password"><input id="pwN2" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password">' +
+      '<button class="btn-p" id="pwBtn" type="submit">변경</button>' + (first ? '<button class="btn-l" id="pwOut" type="button">다른 이름으로 로그인</button>' : '') + '<div id="pwMsg" class="msg"></div></form>');
+    if ($('pwOut')) $('pwOut').onclick = function () { client.auth.signOut().then(function () { me = null; paint(); closeModal(); openLogin(); }); };
+    if (first) $('pmBack').onmousedown = null;
+    ($('pwO') || $('pwN')).focus();
+    $('pwForm').onsubmit = function (ev) {
+      ev.preventDefault();
+      var o = oldPw || ($('pwO') ? $('pwO').value : ''), n = $('pwN').value, n2 = $('pwN2').value;
+      if (!o) return say('pwMsg', '현재 비밀번호를 입력하세요.');
+      if (n.length < 6) return say('pwMsg', '새 비밀번호는 6자 이상이어야 합니다.');
+      if (n !== n2) return say('pwMsg', '새 비밀번호 확인이 다릅니다.');
+      $('pwBtn').disabled = true;
+      client.rpc('change_my_password', { p_old: o, p_new: n }).then(function (r) {
+        if (r.error) { say('pwMsg', errText(r.error)); $('pwBtn').disabled = false; return; }
+        me.mustChange = false; say('pwMsg', '비밀번호를 바꿨습니다.', true);
+        setTimeout(function () { closeModal(); if (location.hash === '#users' && me.isAdmin) openUsers(); }, 700);
+      });
+    };
+  }
+
+  // ----- 관리자: 사용자 · 앱 권한 -----
+  function openUsers() {
+    var head = '<tr><th>이름</th>' + APPS.map(function (a) { return '<th>' + a[1] + '</th>'; }).join('') + '<th>관리자</th><th></th></tr>';
+    modal('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><h2>사용자 · 앱 권한</h2><button class="btn-l" id="uClose" type="button" style="font-size:18px;">✕</button></div>' +
+      '<p class="sub">체크하면 바로 저장됩니다. MFG Report는 권한이 없어도 게스트로 볼 수 있습니다.</p>' +
+      '<div class="tbl-wrap"><table><thead>' + head + '</thead><tbody id="uBody"><tr><td colspan="8" style="color:#64748b">불러오는 중…</td></tr></tbody>' +
+      '<tfoot><tr><td colspan="8" style="text-align:left;padding-top:16px;font-weight:600;font-size:14px;border:0;">사용자 추가</td></tr><tr>' +
+        '<td><input id="nId" type="text" placeholder="이름" style="width:110px;height:32px"></td>' +
+        APPS.map(function (a) { return '<td><input type="checkbox" data-new="' + a[0] + '"' + (DEF_APPS.indexOf(a[0]) >= 0 ? ' checked' : '') + '></td>'; }).join('') +
+        '<td><input type="checkbox" id="nAdmin"></td><td><input id="nPw" type="text" placeholder="초기 비밀번호" style="width:120px;height:32px"> <button class="btn-p" id="nAdd" type="button" style="height:32px;padding:0 14px;">추가</button></td></tr></tfoot></table></div>' +
+      '<div id="uMsg" class="msg" style="margin-top:8px;"></div>' +
+      '<p class="sub" style="margin:8px 0 0;font-size:12px;">초기 비밀번호를 알려주면, 처음 로그인할 때 본인 비밀번호로 바꾸게 됩니다.</p>', true);
+    $('uClose').onclick = closeModal;
+    $('nAdd').onclick = function () {
+      var id = $('nId').value.trim(), pw = $('nPw').value;
+      var apps = [].slice.call(document.querySelectorAll('input[data-new]')).filter(function (x) { return x.checked; }).map(function (x) { return x.getAttribute('data-new'); });
+      if (id.length < 2) return say('uMsg', '이름을 입력하세요.');
+      if (pw.length < 6) return say('uMsg', '초기 비밀번호는 6자 이상이어야 합니다.');
+      client.rpc('admin_create_user', { p_id: id, p_password: pw, p_role: $('nAdmin').checked ? 'admin' : 'user', p_apps: apps }).then(function (r) {
+        if (r.error) return say('uMsg', '추가 실패: ' + errText(r.error));
+        $('nId').value = ''; $('nPw').value = ''; say('uMsg', id + ' 추가했습니다. 초기 비밀번호를 알려주세요.', true); listUsers();
+      });
+    };
+    listUsers();
+  }
+  function listUsers() {
+    client.from('approved_users').select('email,role,login_id,must_change,apps').order('login_id').then(function (r) {
+      var tb = $('uBody'); if (!tb) return;
+      if (r.error) { tb.innerHTML = '<tr><td colspan="8" style="color:#fca5a5">' + esc(errText(r.error)) + '</td></tr>'; return; }
+      tb.innerHTML = (r.data || []).map(function (u) {
+        var apps = Array.isArray(u.apps) ? u.apps : DEF_APPS, mine = u.email === me.email;
+        return '<tr data-em="' + esc(u.email) + '"><td>' + esc(u.login_id || u.email) + (u.must_change ? ' <span style="color:#64748b;font-size:11px">첫 로그인 전</span>' : '') + '</td>' +
+          APPS.map(function (a) { return '<td><input type="checkbox" data-app="' + a[0] + '"' + (apps.indexOf(a[0]) >= 0 ? ' checked' : '') + '></td>'; }).join('') +
+          '<td><input type="checkbox" data-admin="1"' + (u.role === 'admin' ? ' checked' : '') + (mine ? ' disabled title="본인의 관리자 권한은 뺄 수 없습니다"' : '') + '></td>' +
+          '<td><button class="lnk" data-reset="1" style="color:#93c5fd">비밀번호 초기화</button>' + (mine ? '' : '<button class="lnk" data-del="1" style="color:#fca5a5">삭제</button>') + '</td></tr>';
+      }).join('') || '<tr><td colspan="8" style="color:#64748b">없음</td></tr>';
+      tb.querySelectorAll('tr[data-em]').forEach(function (tr) {
+        var em = tr.getAttribute('data-em'), nm = tr.cells[0].firstChild.textContent;
+        var save = function () {
+          var apps = [].slice.call(tr.querySelectorAll('input[data-app]')).filter(function (x) { return x.checked; }).map(function (x) { return x.getAttribute('data-app'); });
+          client.rpc('admin_set_access', { p_email: em, p_apps: apps, p_role: tr.querySelector('input[data-admin]').checked ? 'admin' : 'user' }).then(function (r2) {
+            if (r2.error) { say('uMsg', '저장 실패: ' + errText(r2.error)); listUsers(); } else say('uMsg', nm + ' 권한 저장됨', true);
+          });
+        };
+        tr.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.onchange = save; });
+        tr.querySelector('button[data-reset]').onclick = function () {
+          var pw = prompt(nm + ' — 새 초기 비밀번호 (6자 이상):'); if (!pw) return;
+          client.rpc('admin_reset_password', { p_email: em, p_password: pw }).then(function (r2) { say('uMsg', r2.error ? '초기화 실패: ' + errText(r2.error) : nm + ' 비밀번호 초기화 — 다음 로그인 때 본인 비밀번호로 바꾸게 됩니다.', !r2.error); listUsers(); });
+        };
+        var del = tr.querySelector('button[data-del]');
+        if (del) del.onclick = function () {
+          if (!confirm(nm + ' 계정을 삭제하시겠습니까?')) return;
+          client.rpc('admin_delete_user', { p_email: em }).then(function (r2) { say('uMsg', r2.error ? '삭제 실패: ' + errText(r2.error) : nm + ' 삭제했습니다.', !r2.error); listUsers(); });
+        };
+      });
+    });
+  }
+
+  // ----- 시작: 다른 앱에서 로그인했으면 그대로 이어서 -----
+  paint();
+  if (client) client.auth.getSession().then(function (r) {
+    var s = r && r.data && r.data.session;
+    if (s && s.user && s.user.email) return loadMe(String(s.user.email).toLowerCase(), '');
+    if (location.hash === '#users') openLogin();
+  }).catch(function (e) { console.warn(e); });
+})();
+</script>
 
 
 
