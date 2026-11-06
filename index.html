@@ -141,6 +141,7 @@
   .pm tfoot input[type=text] { height:34px; }
 
 
+
   /* 참여 현황 창 */
   .pm.act { max-width:820px; padding:24px 28px 28px; }
   .act-ctl { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:12px 0 6px; }
@@ -476,7 +477,10 @@
 
   // ----- 참여 현황: 조직도 MFG 인원별 SIO · 제안서 · E-Star(보낸 건수), 해당 연도 — 누구나 -----
   var ACT_GAS = 'https://script.google.com/macros/s/AKfycbzfrFhBARsEkBD5YCSYJodYCrG-FXEw63Slw6rDZlzkfZaKeHCAZD_Y6jZQmbRqB4OVOQ/exec';   // SIO·제안서 시트 이름별 건수 (시트 주인 계정의 Apps Script 웹앱)
-  var actSort = { k: 'sum', d: -1 }, actData = null;
+  var actSort = { k: 'ord', d: 1 }, actData = null;
+  var ACT_ES_SITE = ['안병선', '이세민', '한소진', '정동린', '이승현', '황숙향', '김나영', '박춘성', '류정식'];   // E-Star 칸은 숫자 대신 «사이트 확인»
+  var ESTAR_URL = 'https://eatonmfgkorea-maker.github.io/estar/';
+  var ACT_DEPT = ['MFG', 'TCP', 'FE'];   // 기본 순서: MFG(조직도 순서) → TCP(가나다) → FE(가나다) → 나머지(부서·가나다)
   var nk = function (s) { return String(s || '').replace(/\s+/g, ''); };
   function actOrg() {
     return client.rpc('mfg_org_names').then(function (r) {
@@ -507,9 +511,9 @@
       var byId = {}, dl = {}; org.people.forEach(function (p) { byId[p.id] = p; }); (org.depts || []).forEach(function (d) { dl[d.id] = d.label; });
       var deptOf = function (p) { for (var i = 0; p && i < 20; i++) { if (p.dept && dl[p.dept]) return dl[p.dept]; p = byId[p.parent]; } return ''; };
       var sio = (g && g.sio && g.sio.counts) || {}, sug = (g && g.sug && g.sug.counts) || {}, seen = {};
-      var rows = org.people.filter(function (p) { var k = nk(p.name); if (!k || seen[k]) return false; seen[k] = 1; return true; }).map(function (p) {
-        var k = nk(p.name), a = sio[k] || 0, b2 = sug[k] || 0, c = (es && es[k]) || 0;
-        return { name: p.name, dept: deptOf(p), sio: a, sug: b2, es: c, sum: a + b2 + c };
+      var rows = org.people.filter(function (p) { var k = nk(p.name); if (!k || seen[k]) return false; seen[k] = 1; return true; }).map(function (p, i) {
+        var k = nk(p.name), a = sio[k] || 0, b2 = sug[k] || 0, site = ACT_ES_SITE.indexOf(k) >= 0, c = site ? 0 : ((es && es[k]) || 0);
+        return { name: p.name, dept: deptOf(p), sio: a, sug: b2, es: c, esSite: site, sum: a + b2 + c, oi: i };
       });
       var out = function (src) { return Object.keys(src || {}).filter(function (k) { return !seen[k]; }).length; };
       actData = { y: y, rows: rows, gasOff: g && g.off, gasErr: g && (g.err || (g.sio && g.sio.error) || (g.sug && g.sug.error)), esErr: !es, outside: { sio: out(sio), sug: out(sug), es: out(es) }, at: g && g.at };
@@ -523,17 +527,19 @@
     var q = nk(($('actQ') || {}).value || '').toLowerCase();
     var rows = actData.rows.filter(function (r) { return !q || nk(r.name + r.dept).toLowerCase().indexOf(q) >= 0; });
     var k = actSort.k, d = actSort.d;
-    rows.sort(function (a, c) { var x = a[k], z = c[k]; if (typeof x === 'string') return x.localeCompare(z, 'ko') * d; return (x - z) * d || a.name.localeCompare(c.name, 'ko'); });
+    var dr = function (r) { var i = ACT_DEPT.indexOf(r.dept); return i < 0 ? ACT_DEPT.length : i; };
+    var base = function (a, c) { return dr(a) - dr(c) || (dr(a) === 0 ? a.oi - c.oi : 0) || (dr(a) === ACT_DEPT.length ? a.dept.localeCompare(c.dept, 'ko') : 0) || a.name.localeCompare(c.name, 'ko'); };
+    rows.sort(function (a, c) { if (k === 'ord') return base(a, c); var x = a[k], z = c[k]; if (typeof x === 'string') return x.localeCompare(z, 'ko') * d || base(a, c); return (x - z) * d || base(a, c); });
     var tot = { sio: 0, sug: 0, es: 0, sum: 0 }; rows.forEach(function (r) { tot.sio += r.sio; tot.sug += r.sug; tot.es += r.es; tot.sum += r.sum; });
     var off = actData.gasOff ? '연결 전' : null;
     var cell = function (v, o) { return o ? '<td class="z">' + o + '</td>' : '<td' + (v ? '' : ' class="z"') + '>' + (v ? v : '–') + '</td>'; };
-    var th = function (key, label, l) { return '<th data-k="' + key + '" class="' + (l ? 'l ' : '') + (k === key ? 'on' : '') + '">' + label + (k === key ? (d < 0 ? ' ▼' : ' ▲') : '') + '</th>'; };
-    b.innerHTML = '<div class="pl-wrap"><table class="at"><thead><tr>' + th('name', '이름', 1) + th('dept', '부서', 1) + th('sio', 'SIO') + th('sug', '제안서') + th('es', 'E-Star') + th('sum', '합계') + '</tr></thead><tbody>' +
-      rows.map(function (r) { return '<tr><td class="l nm">' + esc(r.name) + '</td><td class="l">' + esc(r.dept) + '</td>' + cell(r.sio, off) + cell(r.sug, off) + cell(r.es, actData.esErr ? '오류' : null) + '<td class="sum">' + (r.sum || '–') + '</td></tr>'; }).join('') +
-      '</tbody><tfoot><tr><td class="l">합계</td><td class="l">' + rows.length + '명</td><td>' + (off || tot.sio) + '</td><td>' + (off || tot.sug) + '</td><td>' + tot.es + '</td><td>' + tot.sum + '</td></tr></tfoot></table></div>' +
+    var th = function (key, label, l) { return '<th data-k="' + key + '" class="' + (l ? 'l ' : '') + (k === key ? 'on' : '') + '">' + label + (k === key && key !== 'ord' ? (d < 0 ? ' ▼' : ' ▲') : '') + '</th>'; };
+    b.innerHTML = '<div class="pl-wrap"><table class="at"><thead><tr>' + th('ord', 'No.', 1) + th('name', '이름', 1) + th('dept', '부서', 1) + th('sio', 'SIO') + th('sug', '제안서') + th('es', 'E-Star') + '</tr></thead><tbody>' +
+      rows.map(function (r, i) { return '<tr><td class="l z">' + (i + 1) + '</td><td class="l nm">' + esc(r.name) + '</td><td class="l">' + esc(r.dept) + '</td>' + cell(r.sio, off) + cell(r.sug, off) + (r.esSite ? '<td><a href="' + ESTAR_URL + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:var(--acc);text-decoration:underline">사이트 확인</a></td>' : cell(r.es, actData.esErr ? '오류' : null)) + '</tr>'; }).join('') +
+      '</tbody></table></div>' +
       '<p class="act-note">E-Star는 보낸 건수. 조직도(MFG Report)에 있는 이름만 셈 — 조직도에 없는 이름: SIO ' + actData.outside.sio + '명 · 제안서 ' + actData.outside.sug + '명 · E-Star ' + actData.outside.es + '명.' +
       (actData.gasOff ? ' SIO·제안서 시트는 아직 연결 전입니다.' : actData.gasErr ? ' SIO·제안서 오류: ' + esc(actData.gasErr) : '') + '</p>';
-    b.querySelectorAll('th[data-k]').forEach(function (h) { h.onclick = function () { var key = h.getAttribute('data-k'); actSort = { k: key, d: actSort.k === key ? -actSort.d : (key === 'name' || key === 'dept' ? 1 : -1) }; actPaint(); }; });
+    b.querySelectorAll('th[data-k]').forEach(function (h) { h.onclick = function () { var key = h.getAttribute('data-k'); actSort = key === 'ord' ? { k: 'ord', d: 1 } : { k: key, d: actSort.k === key ? -actSort.d : (key === 'name' || key === 'dept' ? 1 : -1) }; actPaint(); }; });
   }
   function openAct() {
     var y = new Date().getFullYear();
@@ -546,6 +552,7 @@
     actLoad(y);
   }
   $('actBtn').onclick = openAct;
+
   $('planItem').onclick = function () { openPlan(); };
   // ----- 로그인 -----
   function loadMe(email, pw) {
