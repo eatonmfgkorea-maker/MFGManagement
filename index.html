@@ -139,6 +139,39 @@
   .pm .lnk { border:0; background:none; cursor:pointer; font-size:12px; font-weight:700; font-family:inherit; padding:2px 4px; text-decoration:underline; }
   .pm .tbl-wrap { overflow-x:auto; }
   .pm tfoot input[type=text] { height:34px; }
+
+  /* 생산계획 버튼 · 창 */
+  .grp-head .gh-r { display:flex; align-items:center; gap:14px; margin-left:auto; }
+  .btn-plan { height:36px; padding:0 16px; border:2px solid var(--ink); border-radius:2px; background:var(--ink); color:var(--bg); font-size:14px; font-weight:700; cursor:pointer; align-self:center; }
+  .btn-plan:hover { background:var(--acc); border-color:var(--acc); }
+  @media (max-width:640px) { .grp-head .gh-r { gap:8px; } .btn-plan { height:32px; padding:0 10px; font-size:13px; } }
+  .pm.plan { max-width:1080px; padding:24px 28px 28px; }
+  .pl-top { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+  .pl-top h2 { margin:0; }
+  .seg { display:inline-flex; border:2px solid var(--ink); border-radius:2px; }
+  .seg button { height:34px; padding:0 16px; border:0; background:none; font-size:14px; font-weight:700; color:var(--ink); cursor:pointer; }
+  .seg button.on { background:var(--ink); color:var(--bg); }
+  .pl-x { margin-left:auto; border:0; background:none; font-size:20px; cursor:pointer; color:var(--ink); padding:4px 6px; }
+  .pl-sec { margin-top:20px; }
+  .pl-sh { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding-bottom:6px; border-bottom:4px solid var(--ink); }
+  .pl-sh b { font-size:30px; font-weight:900; letter-spacing:-0.04em; }
+  .pl-sh span { font-size:13px; font-weight:700; color:var(--acc); }
+  .pl-wrap { overflow-x:auto; }
+  .pm table.pl { border-collapse:collapse; font-size:14px; min-width:100%; }
+  .pm table.pl th { font-size:12px; color:var(--muted); border-bottom:1.5px solid var(--ink); padding:8px 10px; text-align:right; }
+  .pm table.pl th.l, .pm table.pl td.l { text-align:left; }
+  .pm table.pl td { padding:7px 10px; border-bottom:1px solid var(--num); text-align:right; font-variant-numeric:tabular-nums; vertical-align:top; }
+  .pm table.pl td.ln { font-weight:900; font-size:15px; letter-spacing:-0.02em; border-bottom:1.5px solid var(--ink); white-space:nowrap; }
+  .pm table.pl tr.last td { border-bottom:1.5px solid var(--ink); }
+  .pm table.pl td.it b { font-weight:700; }
+  .pm table.pl td.it small { display:block; font-size:11px; color:var(--muted); }
+  .pm table.pl td.q { font-weight:700; }
+  .pm table.pl td.q small { display:block; font-size:11px; font-weight:700; color:var(--acc); }
+  .pm table.pl td.z { color:var(--num); }
+  .pm table.pl th.td, .pm table.pl td.td { background:#E3E0D9; }
+  .pm table.pl th.td { color:var(--acc); }
+  .pm table.pl td.sum { font-weight:900; }
+  .pl-none { padding:14px 0; font-size:14px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -162,7 +195,7 @@
 
   <main>
     <section>
-      <div class="grp-head"><h2>Production</h2><span>생산 · 3개</span></div>
+      <div class="grp-head"><h2>Production</h2><span class="gh-r"><button type="button" id="planItem" class="btn-plan">생산계획</button><span>생산 · 3개</span></span></div>
       <a class="item" data-app="tcp" href="https://eatonmfgkorea-maker.github.io/TCP" target="_blank" rel="noopener">
         <span class="num">01</span>
         <span class="txt"><span class="nm">TCP 생산관리</span><span class="ds">생산일지 · 불량 · 재작업 · 비가동 · 인원</span></span>
@@ -334,6 +367,97 @@
       $('orgBody').innerHTML = html; $('orgSub').textContent = 'MFG 전체 ' + ppl.length + '명';
     }).catch(function () { orgEmpty('조직도를 불러오지 못했습니다.'); });
   }
+
+  // ----- 생산계획 (PC 업로드 스크립트가 올린 계획 엑셀: prod_state PLAN tcp·fe) -----
+  var FE_LINES = ['Auto Module FLVV', 'Manual FLVV', 'UCC', 'LVS', 'Auto GVV', 'New(MNL) GVV', 'FTIV', 'New ICV', 'Old ICV', 'Membrane'];
+  var planView = 'day', planData = null;
+  function ymd(d) { var p = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+  function hm(t) { if (!t) return ''; var d = new Date(t); return isNaN(d) ? '' : (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  // 계획 → [{plant, line, item, sub, date, shift, qty}]
+  function planRows(rows) {
+    var out = [], tcp = null, fe = null;
+    rows.forEach(function (r) { if (r.key === 'tcp') tcp = r; if (r.key === 'fe') fe = r; });
+    if (tcp && tcp.plan) Object.keys(tcp.plan).forEach(function (k) {
+      var a = k.split('|'), q = +tcp.plan[k];   // TCP|1PC|주간|날짜|아이템 (아이템이 '주간'/'야간'이면 합계 줄 → 뺌)
+      if (a.length < 5 || !q || a[4] === '주간' || a[4] === '야간') return;
+      out.push({ plant: 'TCP', line: a[1], item: a[4], sub: '', date: a[3], shift: a[2], qty: q });
+    });
+    if (fe && Array.isArray(fe.files)) fe.files.forEach(function (f) {
+      (f.rows || []).forEach(function (r) { if (+r.qty) out.push({ plant: 'FE', line: r.line || '', item: r.name || r.pno, sub: r.name ? r.pno : '', date: r.date, shift: r.shift, qty: +r.qty }); });
+    });
+    return { list: out, at: { TCP: tcp && (tcp.parsedAt || tcp.updated_at), FE: fe && (fe.parsedAt || fe.updated_at) } };
+  }
+  function lineOrder(plant, l) { if (plant === 'TCP') return l; var i = FE_LINES.indexOf(l); return (i < 0 ? 90 : i) + l; }
+  // 라인·아이템별로 묶기: {line: {item: {sub, cells: {날짜: {주간, 야간}}}}}
+  function groupPlan(list, plant, dates) {
+    var g = {}, set = {}; dates.forEach(function (d) { set[d] = 1; });
+    list.forEach(function (r) {
+      if (r.plant !== plant || !set[r.date]) return;
+      var L = g[r.line] = g[r.line] || {}, key = r.item + '|' + r.sub, I = L[key] = L[key] || { item: r.item, sub: r.sub, c: {} };
+      var c = I.c[r.date] = I.c[r.date] || { d: 0, n: 0 };
+      if (r.shift === '야간') c.n += r.qty; else c.d += r.qty;
+    });
+    return Object.keys(g).sort(function (a, b) { return lineOrder(plant, a) < lineOrder(plant, b) ? -1 : 1; }).map(function (l) {
+      return { line: l, items: Object.keys(g[l]).map(function (k) { return g[l][k]; }).sort(function (a, b) { return a.item < b.item ? -1 : 1; }) };
+    });
+  }
+  function planSection(plant, list, dates, at) {
+    var groups = groupPlan(list, plant, dates), today = ymd(new Date()), week = dates.length > 1, total = 0, h = '';
+    groups.forEach(function (G) {
+      G.items.forEach(function (I, k) {
+        var tr = '<tr' + (k === G.items.length - 1 ? ' class="last"' : '') + '>';
+        if (k === 0) tr += '<td class="l ln" rowspan="' + G.items.length + '">' + esc(G.line) + '</td>';
+        tr += '<td class="l it"><b>' + esc(I.item) + '</b>' + (I.sub ? '<small>' + esc(I.sub) + '</small>' : '') + '</td>';
+        if (!week) {
+          var c = I.c[dates[0]] || { d: 0, n: 0 }; total += c.d + c.n;
+          tr += '<td class="q' + (c.d ? '' : ' z') + '">' + (c.d ? fmt(c.d) : '–') + '</td><td class="q' + (c.n ? '' : ' z') + '">' + (c.n ? fmt(c.n) : '–') + '</td><td class="sum">' + fmt(c.d + c.n) + '</td>';
+        } else {
+          var s = 0;
+          dates.forEach(function (d) {
+            var c = I.c[d], v = c ? c.d + c.n : 0; s += v;
+            tr += '<td class="q' + (v ? '' : ' z') + (d === today ? ' td' : '') + '">' + (v ? fmt(v) + (c.n ? '<small>야 ' + fmt(c.n) + '</small>' : '') : '–') + '</td>';
+          });
+          total += s; tr += '<td class="sum">' + fmt(s) + '</td>';
+        }
+        h += tr + '</tr>';
+      });
+    });
+    var head = '<tr><th class="l">라인</th><th class="l">아이템</th>' + (week ? dates.map(function (d) {
+      var dt = new Date(d + 'T00:00:00'); return '<th' + (d === today ? ' class="td"' : '') + '>' + (dt.getMonth() + 1) + '/' + dt.getDate() + ' ' + '일월화수목금토'[dt.getDay()] + '</th>';
+    }).join('') : '<th>주간</th><th>야간</th>') + '<th>합계</th></tr>';
+    return '<section class="pl-sec"><div class="pl-sh"><b>' + plant + '</b><span>' + (h ? '합계 ' + fmt(total) + '개 · ' : '') + '계획 엑셀 ' + esc(hm(at) || '-') + ' 기준</span></div>' +
+      (h ? '<div class="pl-wrap"><table class="pl"><thead>' + head + '</thead><tbody>' + h + '</tbody></table></div>' : '<div class="pl-none">' + (week ? '이번 주' : '오늘') + ' 계획이 없습니다.</div>') + '</section>';
+  }
+  function planDates() {
+    var t = new Date(); if (planView === 'day') return [ymd(t)];
+    var m = new Date(t); m.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+    var out = []; for (var i = 0; i < 7; i++) { var d = new Date(m); d.setDate(m.getDate() + i); out.push(ymd(d)); }
+    var sun = out[6]; if (!planData || !planData.list.some(function (r) { return r.date === sun; })) out.pop();   // 일요일은 계획 있을 때만
+    return out;
+  }
+  function paintPlan() {
+    var body = $('plBody'); if (!body) return;
+    document.querySelectorAll('#plSeg button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === planView); });
+    if (!planData) { body.innerHTML = '<div class="pl-none">불러오는 중…</div>'; return; }
+    var ds = planDates(), a = new Date(ds[0] + 'T00:00:00'), b = new Date(ds[ds.length - 1] + 'T00:00:00');
+    $('plSub').textContent = planView === 'day' ? (a.getMonth() + 1) + '월 ' + a.getDate() + '일 ' + '일월화수목금토'[a.getDay()] + '요일' : (a.getMonth() + 1) + '/' + a.getDate() + ' ~ ' + (b.getMonth() + 1) + '/' + b.getDate() + ' (이번 주)';
+    body.innerHTML = planSection('TCP', planData.list, ds, planData.at.TCP) + planSection('FE', planData.list, ds, planData.at.FE);
+  }
+  function openPlan() {
+    if (!me) { planAfterLogin = true; return openLogin(); }
+    var d = modal('<div class="pl-top"><h2>생산계획</h2><div class="seg" id="plSeg"><button type="button" data-v="day">오늘</button><button type="button" data-v="week">이번 주</button></div><span id="plSub" class="note"></span><button class="pl-x" id="plX" type="button" aria-label="닫기">✕</button></div><div id="plBody"></div>', true);
+    d.querySelector('.pm').classList.add('plan');
+    $('plX').onclick = closeModal;
+    document.querySelectorAll('#plSeg button').forEach(function (b) { b.onclick = function () { planView = b.getAttribute('data-v'); paintPlan(); }; });
+    paintPlan();
+    client.from('prod_state').select('key,updated_at,plan:data->plan,files:data->files,parsedAt:data->>parsedAt').eq('section', 'PLAN').then(function (r) {
+      if (r.error) { var b = $('plBody'); if (b) b.innerHTML = '<div class="pl-none">계획을 불러오지 못했습니다: ' + esc(errText(r.error)) + '</div>'; return; }
+      planData = planRows(r.data || []); paintPlan();
+    });
+  }
+  var planAfterLogin = false;
+  $('planItem').onclick = function () { openPlan(); };
   // ----- 로그인 -----
   function loadMe(email, pw) {
     return client.rpc('my_account').then(function (r) {
@@ -343,6 +467,7 @@
       me = { email: email, name: a.login_id || email, role: a.role, isAdmin: a.role === 'admin', apps: Array.isArray(a.apps) ? a.apps : DEF_APPS, mustChange: !!a.must_change };
       paint(); loadOrg();
       if (me.mustChange) openPwChange(true, pw);
+      else if (planAfterLogin || location.hash === '#plan') { planAfterLogin = false; openPlan(); }
       else if (location.hash === '#users' && me.isAdmin) openUsers();
     });
   }
