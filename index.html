@@ -195,6 +195,9 @@
   table.bt a { color:var(--ink); text-decoration:underline; text-decoration-color:var(--num); text-underline-offset:3px; }
   table.bt a:hover { color:var(--acc); }
   table.bt .k { font-size:11px; font-weight:700; color:var(--acc); }
+  table.bt td.hx { color:var(--acc); font-weight:700; }
+  .bm-ed { font-size:12px; font-weight:700; color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
+  .bm-ed:hover { color:var(--acc); }
   .pm.bom { min-width:0; }
   .pm.bom .pl-wrap { max-width:100%; }
   @media (max-width:640px) { .pm.bom .seg { order:3; width:100%; } .pm.bom .seg button { flex:1; padding:0 4px; font-size:12px; } .bom-up { height:30px; font-size:12px; } }
@@ -655,16 +658,54 @@
     return { v: 2, cols: ['lv', 'rm', 'desc', 'qty', 'unit', 'kind', 'memo'], list: list, n: list.reduce(function (s, F) { return s + F.vers[F.cur].rows.length; }, 0) };
   }
 
+  /* Oracle «BOM전개» 시트(최상위품목·Level·하위품목·수량·소요량…) → 저장 형태 */
+  function bomParseOracle(aoa) {
+    var norm = function (v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); };
+    var H = (aoa[0] || []).map(norm);
+    var col = function (name) { return H.indexOf(name); };
+    var C = { top: col('최상위품목'), topd: col('최상위품명'), lv: col('Level'), par: col('상위품목'), seq: col('Item Seq'), item: col('하위품목'), desc: col('품명'), rev: col('Rev'), uom: col('UOM'), qty: col('수량'), ext: col('소요량(Extended)'), from: col('유효시작일'), to: col('종료일'), eco: col('ECO') };
+    if (C.top < 0 || C.item < 0 || C.lv < 0) throw new Error('BOM전개 시트 제목줄(최상위품목 · Level · 하위품목)을 찾지 못했습니다');
+    var dstr = function (v) {
+      if (v == null || v === '') return '';
+      if (v instanceof Date) { v = new Date(v.getTime() + 43200000); return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0'); }
+      if (typeof v === 'number' && v > 30000 && v < 80000) return new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10);
+      return norm(v);
+    };
+    var num = function (v) { var n = typeof v === 'number' ? v : parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isFinite(n) ? n : null; };
+    var map = {}, order = [], child = {}, asm = {};
+    for (var k = 1; k < aoa.length; k++) {
+      var r = aoa[k] || [], top = norm(r[C.top]), item = norm(r[C.item]); if (!top || !item) continue;
+      var F = map[top]; if (!F) { F = map[top] = { fg: top, desc: norm(r[C.topd]), date: '', rows: [] }; order.push(top); }
+      asm[top] = 1; child[item] = 1;
+      var lv = Number(r[C.lv]) || 1, d0 = dstr(r[C.from]);
+      if (d0 > F.date) F.date = d0;
+      var memo = [C.to >= 0 && r[C.to] ? '종료 ' + dstr(r[C.to]) : '', C.eco >= 0 ? norm(r[C.eco]) : '', C.rev >= 0 && norm(r[C.rev]) && norm(r[C.rev]) !== '*00' ? 'Rev ' + norm(r[C.rev]) : ''].filter(Boolean).join(' · ');
+      F.rows.push([lv, item, norm(r[C.desc]), num(r[C.qty]), norm(r[C.uom]).toUpperCase(), '', memo, C.ext >= 0 ? num(r[C.ext]) : null, norm(r[C.par]), d0]);
+    }
+    var list = order.map(function (t) {
+      var F = map[t];
+      F.rows.forEach(function (x) { if (asm[x[1]]) x[5] = '반제품'; });
+      return { fg: F.fg, desc: F.desc, sub: !!child[F.fg], line: '', pl: '', alias: [], cur: 0, vers: [{ parent: F.fg, pdesc: F.desc, pl: '', date: F.date, rows: [[0, F.fg, F.desc, 1, 'EA', '', '', 1, '', F.date]].concat(F.rows) }] };
+    });
+    if (!list.length) throw new Error('BOM 줄이 없습니다');
+    var fgN = list.filter(function (F) { return !F.sub; }).length;
+    return { v: 3, src: 'oracle', cols: ['lv', 'rm', 'desc', 'qty', 'unit', 'kind', 'memo', 'ext', 'parent', 'from'], list: list, fgN: fgN, n: list.reduce(function (s, F) { return F.sub ? s : s + F.vers[0].rows.length - 1; }, 0) };
+  }
+
   // ----- BOM 조회: 완제품 → 부품 · 부품 → 완제품 · 라인별 — 로그인한 사람만 (서버 prod_state BOM/bom, 게스트는 서버에서 못 읽음) -----
-  var bomData = null, bomMode = 'fg', bomSel = null, bomVer = null, bomLoading = null;
+  var bomData = null, bomMeta = { lines: {}, alias: {} }, bomMode = 'fg', bomSel = null, bomVer = null, bomLoading = null;
   var bnk = function (s) { return String(s == null ? '' : s).toLowerCase().replace(/[\s\-_.\/()]+/g, ''); };
   function bomPrep(d) {
     var used = {}, lines = {};
+    var ML = (bomMeta && bomMeta.lines) || {}, MA = (bomMeta && bomMeta.alias) || {};
     d.list.forEach(function (F) {
+      if (F.line0 === undefined) { F.line0 = F.line || ''; F.alias0 = F.alias || []; }
+      F.line = ML[F.fg] != null ? ML[F.fg] : F.line0; F.alias = MA[F.fg] || F.alias0;   // 라인·다른 이름은 화면에서 고친 값(meta) 우선
       F.rows = (F.vers[F.cur] || F.vers[0]).rows; F.parent = (F.vers[F.cur] || {}).parent || F.fg;
       F.key = bnk([F.fg, F.desc, F.line, F.parent].concat(F.alias || []).join(' '));
+      if (F.sub) return;   // 반제품(다른 BOM 안에 들어가는 조립품)은 라인·역조회에서 뺌 — 완제품 BOM 안에 이미 펼쳐져 있음
       (lines[F.line || '(라인 없음)'] = lines[F.line || '(라인 없음)'] || []).push(F);
-      F.rows.forEach(function (r) { if (r[0] === 0) return; var u = used[r[1]] || (used[r[1]] = { rm: r[1], desc: r[2], fgs: [] }); if (!u.desc) u.desc = r[2]; u.fgs.push({ F: F, lv: r[0], qty: r[3], unit: r[4] }); });
+      F.rows.forEach(function (r) { if (r[0] === 0) return; var u = used[r[1]] || (used[r[1]] = { rm: r[1], desc: r[2], fgs: [] }); if (!u.desc) u.desc = r[2]; u.fgs.push({ F: F, lv: r[0], qty: r[3], unit: r[4], ext: r[7] }); });
     });
     d.used = used; d.lines = lines; d.parts = Object.keys(used).map(function (k) { var u = used[k]; u.key = bnk(u.rm + ' ' + u.desc); return u; });
     return d;
@@ -672,10 +713,12 @@
   function bomLoad() {
     if (bomData) return Promise.resolve(bomData);
     if (bomLoading) return bomLoading;
-    bomLoading = client.from('prod_state').select('data,updated_at').eq('section', 'BOM').eq('key', 'bom').limit(1).then(function (r) {
+    bomLoading = client.from('prod_state').select('key,data,updated_at').eq('section', 'BOM').in('key', ['bom', 'meta']).then(function (r) {
       bomLoading = null;
       if (r.error) throw r.error;
-      var row = r.data && r.data[0]; if (!row || !row.data || !row.data.list) return null;
+      var rows = r.data || [], mr = rows.filter(function (x) { return x.key === 'meta'; })[0], row = rows.filter(function (x) { return x.key === 'bom'; })[0];
+      bomMeta = (mr && mr.data) || { lines: {}, alias: {} }; bomMeta.lines = bomMeta.lines || {}; bomMeta.alias = bomMeta.alias || {};
+      if (!row || !row.data || !row.data.list) return null;
       bomData = bomPrep(row.data); bomData.updated_at = row.updated_at; return bomData;
     });
     return bomLoading;
@@ -689,7 +732,7 @@
     var q = bnk(qi.value), html = '', cnt = 0, MAX = 300;
     if (bomMode === 'fg') {
       var fs = bomData.list.filter(function (F) { return !q || F.key.indexOf(q) >= 0; }); cnt = fs.length;
-      html = fs.slice(0, MAX).map(function (F) { return '<button type="button" class="bl' + (bomSel === 'fg|' + F.fg ? ' on' : '') + '" data-k="fg|' + esc(F.fg) + '"><b>' + esc(F.fg) + '</b><span>' + esc(F.desc) + (F.alias.length ? ' · ' + esc(F.alias.join(', ')) : '') + '</span><em>' + esc(F.line) + '</em></button>'; }).join('');
+      html = fs.slice(0, MAX).map(function (F) { return '<button type="button" class="bl' + (bomSel === 'fg|' + F.fg ? ' on' : '') + '" data-k="fg|' + esc(F.fg) + '"><b>' + esc(F.fg) + '</b><span>' + esc(F.desc) + (F.alias.length ? ' · ' + esc(F.alias.join(', ')) : '') + '</span><em>' + (F.sub ? '반제품' : esc(F.line)) + '</em></button>'; }).join('');
     } else if (bomMode === 'rm') {
       var ps = q ? bomData.parts.filter(function (u) { return u.key.indexOf(q) >= 0; }) : []; cnt = ps.length;
       ps.sort(function (a, b) { var ax = bnk(a.rm) === q ? 0 : 1, bx = bnk(b.rm) === q ? 0 : 1; return ax - bx || a.rm.localeCompare(b.rm); });
@@ -710,23 +753,26 @@
     if (t === 'fg') {
       var F = bomData.list.filter(function (x) { return x.fg === key; })[0]; if (!F) { R.innerHTML = ''; return; }
       var vi = bomVer == null ? F.cur : bomVer, V = F.vers[vi] || F.vers[F.cur];
+      var ora = bomData.v >= 3;
       h = '<div class="bd-h"><b>' + esc(F.fg) + '</b><span>' + esc(F.desc) + '</span></div><div class="bd-m">' +
-        (F.line ? '<span class="tag">' + esc(F.line) + '</span>' : '') + (V.parent !== F.fg ? '<span>Parent ' + esc(V.parent) + '</span>' : '') + (V.pl ? '<span>Part List ' + esc(V.pl) + '</span>' : '') +
+        (F.sub ? '<span class="tag">반제품</span>' : F.line ? '<span class="tag">' + esc(F.line) + '</span>' : '<span>라인 없음</span>') +
+        (me && me.isAdmin && !F.sub ? '<a href="#" class="bm-ed" data-ed="line">라인 고치기</a><a href="#" class="bm-ed" data-ed="alias">다른 이름 고치기</a>' : '') + (V.parent !== F.fg ? '<span>Parent ' + esc(V.parent) + '</span>' : '') + (V.pl ? '<span>Part List ' + esc(V.pl) + '</span>' : '') +
         (F.alias.length ? '<span>다른 이름 ' + esc(F.alias.join(', ')) + '</span>' : '') + '<span>부품 ' + V.rows.filter(function (r) { return r[0] > 0; }).length + '줄</span></div>';
       if (F.vers.length > 1) h += '<div class="bd-v">' + F.vers.map(function (x, i) { return '<button type="button" data-vi="' + i + '" class="' + (i === vi ? 'on' : '') + '">' + (i === F.cur ? '지금 BOM' : '이전 BOM') + ' · ' + esc(x.date || '날짜 없음') + (x.parent !== F.fg ? ' · ' + esc(x.parent) : '') + '</button>'; }).join('') + '</div>' +
         (vi !== F.cur ? '<div class="bd-old">이전 BOM을 보고 있습니다. 지금 쓰는 BOM은 «지금 BOM»입니다.</div>' : '');
-      h += '<div class="pl-wrap"><table class="at bt"><thead><tr><th class="l">Lv</th><th class="l">품번</th><th class="l">품명</th><th>수량</th><th class="l">단위</th><th class="l">구분</th><th class="l">변경 내용</th></tr></thead><tbody>' +
+      if (F.sub) { var ps = {}; bomData.list.forEach(function (G) { if (!G.sub && G.rows.some(function (r) { return r[1] === F.fg && r[0] > 0; })) ps[G.fg] = 1; }); var pk = Object.keys(ps); if (pk.length) h += '<div class="bd-m">들어가는 완제품: ' + pk.slice(0, 12).map(function (x) { return '<a href="#" data-fg="' + esc(x) + '">' + esc(x) + '</a>'; }).join(' · ') + (pk.length > 12 ? ' 외 ' + (pk.length - 12) + '개' : '') + '</div>'; }
+      h += '<div class="pl-wrap"><table class="at bt"><thead><tr><th class="l">Lv</th><th class="l">품번</th><th class="l">품명</th><th>수량</th>' + (ora ? '<th>소요량</th>' : '') + '<th class="l">단위</th><th class="l">구분</th><th class="l">' + (ora ? '유효시작일' : '변경 내용') + '</th></tr></thead><tbody>' +
         V.rows.map(function (r) {
           var lv = r[0], pad = lv > 1 ? (lv - 1) * 16 : 0;
-          return '<tr class="lv' + Math.min(lv, 3) + '"><td class="l z">' + (lv === 0 ? 'P' : lv) + '</td><td class="l"><span style="padding-left:' + pad + 'px">' + (lv > 1 ? '└ ' : '') + (lv > 0 ? '<a href="#" data-rm="' + esc(r[1]) + '">' + esc(r[1]) + '</a>' : '<b>' + esc(r[1]) + '</b>') + '</span></td><td class="l">' + esc(r[2]) + '</td><td>' + fq(r[3]) + '</td><td class="l">' + esc(r[4]) + '</td><td class="l">' + (r[5] ? '<span class="k">' + esc(r[5]) + '</span>' : '') + '</td><td class="l mm">' + esc(r[6]) + '</td></tr>';
-        }).join('') + '</tbody></table></div><p class="act-note">품번을 누르면 그 부품이 들어가는 다른 완제품을 봅니다. Lv P = 완제품, 1 = 바로 아래, └ = 반제품 아래 부품.</p>';
+          return '<tr class="lv' + Math.min(lv, 3) + '"><td class="l z">' + (lv === 0 ? 'P' : lv) + '</td><td class="l"><span style="padding-left:' + pad + 'px">' + (lv > 1 ? '└ ' : '') + (lv > 0 ? '<a href="#" data-rm="' + esc(r[1]) + '">' + esc(r[1]) + '</a>' : '<b>' + esc(r[1]) + '</b>') + '</span></td><td class="l">' + esc(r[2]) + '</td><td>' + fq(r[3]) + '</td>' + (ora ? '<td' + (r[7] != null && r[7] !== r[3] ? ' class="hx"' : '') + '>' + fq(r[7]) + '</td>' : '') + '<td class="l">' + esc(r[4]) + '</td><td class="l">' + (r[5] ? '<span class="k">' + esc(r[5]) + '</span>' : '') + '</td><td class="l mm">' + esc(ora ? [r[9], r[6]].filter(Boolean).join(' · ') : r[6]) + '</td></tr>';
+        }).join('') + '</tbody></table></div><p class="act-note">품번을 누르면 그 부품이 들어가는 다른 완제품을 봅니다. Lv P = 완제품, 1 = 바로 아래, └ = 반제품 아래 부품.' + (ora ? ' 소요량 = 완제품 1개에 드는 수량(위 단계 수량까지 곱함), 수량과 다르면 주황.' : '') + '</p>';
     } else if (t === 'rm') {
       var u = bomData.used[key]; if (!u) { R.innerHTML = ''; return; }
       var rows = u.fgs.slice().sort(function (a, b) { return (a.F.line || '').localeCompare(b.F.line || '', 'ko') || a.F.fg.localeCompare(b.F.fg); });
       var nfg = {}; rows.forEach(function (x) { nfg[x.F.fg] = 1; });
       h = '<div class="bd-h"><b>' + esc(u.rm) + '</b><span>' + esc(u.desc) + '</span></div><div class="bd-m"><span>들어가는 완제품 ' + Object.keys(nfg).length + '개</span></div>' +
-        '<div class="pl-wrap"><table class="at bt"><thead><tr><th class="l">완제품</th><th class="l">품명</th><th class="l">라인</th><th class="l">Lv</th><th>수량</th><th class="l">단위</th></tr></thead><tbody>' +
-        rows.map(function (x) { return '<tr><td class="l"><a href="#" data-fg="' + esc(x.F.fg) + '"><b>' + esc(x.F.fg) + '</b></a></td><td class="l">' + esc(x.F.desc) + '</td><td class="l">' + esc(x.F.line) + '</td><td class="l z">' + x.lv + '</td><td>' + fq(x.qty) + '</td><td class="l">' + esc(x.unit) + '</td></tr>'; }).join('') +
+        '<div class="pl-wrap"><table class="at bt"><thead><tr><th class="l">완제품</th><th class="l">품명</th><th class="l">라인</th><th class="l">Lv</th><th>소요량</th><th class="l">단위</th></tr></thead><tbody>' +
+        rows.map(function (x) { return '<tr><td class="l"><a href="#" data-fg="' + esc(x.F.fg) + '"><b>' + esc(x.F.fg) + '</b></a></td><td class="l">' + esc(x.F.desc) + '</td><td class="l">' + esc(x.F.line) + '</td><td class="l z">' + x.lv + '</td><td>' + fq(x.ext != null ? x.ext : x.qty) + '</td><td class="l">' + esc(x.unit) + '</td></tr>'; }).join('') +
         '</tbody></table></div><p class="act-note">지금 BOM 기준 (이전 BOM은 빼고 셈). 완제품을 누르면 그 BOM을 봅니다.</p>';
     } else {
       var fs = (bomData.lines[key] || []).slice().sort(function (a, b) { return a.fg.localeCompare(b.fg); });
@@ -738,10 +784,24 @@
     R.querySelectorAll('a[data-rm]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); bomGo('rm', a.getAttribute('data-rm')); }; });
     R.querySelectorAll('a[data-fg]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); bomGo('fg', a.getAttribute('data-fg')); }; });
     R.querySelectorAll('.bd-v button').forEach(function (b) { b.onclick = function () { bomVer = Number(b.getAttribute('data-vi')); bomDetail(); }; });
+    R.querySelectorAll('a.bm-ed').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); bomEditMeta(a.getAttribute('data-ed'), key); }; });
+  }
+  // 관리자: 라인 · 다른 이름(모델명) 고치기 — BOM 엑셀을 다시 올려도 그대로 남음 (prod_state BOM/meta)
+  function bomEditMeta(kind, fg) {
+    var F = bomData.list.filter(function (x) { return x.fg === fg; })[0]; if (!F) return;
+    var cur = kind === 'line' ? F.line : F.alias.join(', ');
+    var v = prompt(kind === 'line' ? fg + ' 라인 (예: 2PC, Auto FLVV) — 비우면 라인 없음' : fg + ' 다른 이름 · 모델명 (쉼표로 여러 개)', cur || ''); if (v == null) return; v = v.trim();
+    var next = JSON.parse(JSON.stringify(bomMeta || {})); next.lines = next.lines || {}; next.alias = next.alias || {};
+    if (kind === 'line') next.lines[fg] = v; else next.alias[fg] = v ? v.split(',').map(function (x) { return x.trim(); }).filter(Boolean) : [];
+    client.from('prod_state').upsert({ section: 'BOM', key: 'meta', data: next, updated_by: me.email }, { onConflict: 'section,key' }).then(function (r) {
+      if (r.error) { alert('저장하지 못했습니다: ' + errText(r.error)); return; }
+      bomMeta = next; bomPrep(bomData); bomPaint();
+    });
   }
   function bomInfo() {
     var s = $('bomSub'); if (!s) return;
-    s.textContent = bomData ? '완제품 ' + bomData.list.length + ' · 부품 ' + bomData.parts.length.toLocaleString() + '종 · ' + (bomData.file || '') + ' (' + String(bomData.at || bomData.updated_at || '').slice(0, 10) + ')' : '';
+    var nf = bomData ? bomData.list.filter(function (F) { return !F.sub; }).length : 0, ns = bomData ? bomData.list.length - nf : 0;
+    s.textContent = bomData ? '완제품 ' + nf + (ns ? ' · 반제품 ' + ns : '') + ' · 부품 ' + bomData.parts.length.toLocaleString() + '종 · ' + (bomData.file || '') + ' (' + String(bomData.at || bomData.updated_at || '').slice(0, 10) + ' 올림)' : '';
   }
   function openBom() {
     if (!me) { bomAfterLogin = true; return openLogin(); }
@@ -766,14 +826,17 @@
     var m = $('bomMsg'), say2 = function (t, err) { if (m) { m.textContent = t; m.className = 'bom-msg' + (err ? ' err' : ''); } };
     say2('엑셀 읽는 중…');
     bomXlsx().then(function (X) { return file.arrayBuffer().then(function (buf) { return X.read(buf, { type: 'array', cellDates: true }); }); }).then(function (wb) {
-      var aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null });
-      var d = bomParse(aoa); d.at = new Date().toISOString(); d.file = file.name; d.by = me.name;
-      var old = bomData ? bomData.list.length : 0;
-      if (!confirm('BOM을 이 엑셀로 바꿀까요?\n\n완제품 ' + d.list.length + '개 · 지금 BOM 부품 줄 ' + d.n.toLocaleString() + '개\n(지금 등록된 것: 완제품 ' + old + '개)\n\n같은 FG에 BOM이 여러 개면 날짜가 가장 최근인 것이 «지금 BOM», 나머지는 «이전 BOM»으로 남습니다.')) { say2(''); return; }
+      var ws = wb.Sheets['BOM전개'] || wb.Sheets[wb.SheetNames[0]];
+      var aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+      var isOra = (aoa[0] || []).some(function (x) { return String(x || '').trim() === '최상위품목'; });
+      var d = isOra ? bomParseOracle(aoa) : bomParse(aoa); d.at = new Date().toISOString(); d.file = file.name; d.by = me.name;
+      var old = bomData ? bomData.list.filter(function (F) { return !F.sub; }).length : 0;
+      var nfg = isOra ? d.fgN : d.list.length;
+      if (!confirm('BOM을 이 엑셀로 바꿀까요?\n\n' + (isOra ? 'Oracle BOM전개 · ' : '') + '완제품 ' + nfg + '개' + (isOra ? ' · 반제품 ' + (d.list.length - d.fgN) + '개' : '') + ' · 부품 줄 ' + d.n.toLocaleString() + '개\n(지금 등록된 것: 완제품 ' + old + '개)\n\n라인 · 다른 이름은 지금 것 그대로 둡니다.')) { say2(''); return; }
       say2('저장 중…');
       return client.from('prod_state').upsert({ section: 'BOM', key: 'bom', data: d, updated_by: me.email }, { onConflict: 'section,key' }).then(function (r) {
         if (r.error) throw r.error;
-        bomData = bomPrep(d); bomSel = null; bomInfo(); bomPaint(); say2('저장했습니다 — 완제품 ' + d.list.length + '개');
+        bomData = bomPrep(d); bomSel = null; bomInfo(); bomPaint(); say2('저장했습니다 — 완제품 ' + nfg + '개');
       });
     }).catch(function (e) { say2('엑셀을 올리지 못했습니다: ' + errText(e), true); });
   }
