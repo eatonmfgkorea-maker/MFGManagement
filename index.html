@@ -974,7 +974,8 @@
   };
   // 공정 → 생산계획 라인 이름 (제품명 고르기용)
   var DF_PLAN_LINE = { '1PC': '1PC', '2PC': '2PC', 'A/FLVV': 'Auto Module FLVV', 'M/FLVV': 'Manual FLVV', 'C/FLVV': 'Combo FLVV', 'A/GVV': 'Auto GVV', 'M/GVV': 'New(MNL) GVV', 'LVS': 'LVS', 'UCC': 'UCC', 'MEM': 'Membrane', 'FTIV': 'FTIV', 'New ICV': 'New ICV', 'Old ICV': 'Old ICV' };
-  var dfLists = null, dfRows = null, dfView = 'new', dfCur = null, dfEdit = null, dfFiles = [], dfRec = '최초', dfAfterLogin = false, dfUrls = {};
+  var DF_KINDS = ['설비', '자재', '품질'];
+  var dfLists = null, dfRows = null, dfView = 'new', dfCur = null, dfEdit = null, dfFiles = [], dfRec = '최초', dfKind = '', dfAfterLogin = false, dfUrls = {};
   function dfMine(r) { return me && (me.isAdmin || String(r.created_by || '').toLowerCase() === String(me.email || '').toLowerCase()); }
   function dfLoad(force) {
     var jobs = [];
@@ -1024,13 +1025,14 @@
   function dfPaintForm(b) {
     var E = dfEdit || {}, rep = E.reporter || (dfLists.reporters.filter(function (x) { return x.split(' ')[0] === me.name; })[0] || '');
     var opt = function (list, v) { return '<option value="">선택</option>' + list.map(function (x) { return '<option' + (x === v ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + (v && list.indexOf(v) < 0 ? '<option selected>' + esc(v) + '</option>' : ''); };
-    dfRec = E.recur || dfRec || '최초';
+    dfRec = E.recur || dfRec || '최초'; dfKind = E.kind || (dfEdit ? '' : dfKind) || '';
     b.innerHTML = '<form id="dfForm" class="df-form" novalidate><div class="df-g">' +
       '<label>날짜<input type="date" id="dfD" value="' + esc(E.d || ymd(new Date())) + '"></label>' +
       '<label>보고자<select id="dfRep">' + opt(dfLists.reporters, rep) + '</select></label>' +
+      '<div><span class="lb">유형</span><div class="seg" id="dfKind">' + DF_KINDS.map(function (k) { return '<button type="button" data-v="' + k + '">' + k + '</button>'; }).join('') + '</div></div>' +
       '<div><span class="lb">라인</span><div class="seg" id="dfLine"><button type="button" data-v="TCP">TCP</button><button type="button" data-v="FE">FE</button></div></div>' +
       '<label>공정<select id="dfProc"></select></label>' +
-      '<label class="w2">제품명<input type="text" id="dfProd" autocomplete="off" value="' + esc(E.product || '') + '"></label>' +
+      '<label>제품명<input type="text" id="dfProd" autocomplete="off" value="' + esc(E.product || '') + '"></label>' +
       '<div class="w2"><span class="lb">Down Time <small>시작은 꼭 · 종료는 선택</small></span><div class="df-dt"><input type="time" id="dfS" value="' + esc(dfT(E.dt_start)) + '"><span>~</span><input type="time" id="dfE" value="' + esc(dfT(E.dt_end)) + '"><b id="dfMin"></b></div></div>' +
       '<label class="w2">문제점 (원인)<textarea id="dfProb" rows="3">' + esc(E.problem || '') + '</textarea></label>' +
       '<label class="w2">조치사항<textarea id="dfAct" rows="3">' + esc(E.action || '') + '</textarea></label>' +
@@ -1047,11 +1049,13 @@
       setProd();
     }, setProd = function () {
     }, setRec = function (v) { dfRec = v; document.querySelectorAll('#dfRec button').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-v') === v); }); },
+    setKind = function (v) { dfKind = v; document.querySelectorAll('#dfKind button').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-v') === v); }); },
     setMin = function () { var m = dfDur($('dfS').value, $('dfE').value); $('dfMin').textContent = m ? m : ''; };
     document.querySelectorAll('#dfLine button').forEach(function (x) { x.onclick = function () { setLine(x.getAttribute('data-v')); }; });
     document.querySelectorAll('#dfRec button').forEach(function (x) { x.onclick = function () { setRec(x.getAttribute('data-v')); }; });
+    document.querySelectorAll('#dfKind button').forEach(function (x) { x.onclick = function () { setKind(x.getAttribute('data-v')); }; });
     $('dfProc').onchange = setProd; $('dfS').oninput = setMin; $('dfE').oninput = setMin;
-    setLine(line, E.proc || ''); setRec(dfRec); setMin(); dfPaintPh();
+    setLine(line, E.proc || ''); setRec(dfRec); setKind(dfKind); setMin(); dfPaintPh();
     $('dfForm').onsubmit = function (ev) { ev.preventDefault(); dfSave(line); };
     if ($('dfCancel')) $('dfCancel').onclick = function () { dfView = 'det'; dfEdit = null; dfFiles = []; dfPaint(); };
     if ($('dfLists')) $('dfLists').onclick = dfEditLists;
@@ -1084,8 +1088,8 @@
   }
   function dfSave(line) {
     var v = function (id) { var e = $(id); return e ? String(e.value || '').trim() : ''; };
-    var row = { d: v('dfD'), reporter: v('dfRep'), line: line, proc: v('dfProc') || null, product: v('dfProd') || null, dt_start: v('dfS'), dt_end: v('dfE') || null, problem: v('dfProb'), action: v('dfAct') || null, etc: v('dfEtc') || null, recur: dfRec };
-    var miss = [!row.d && '날짜', !row.reporter && '보고자', !row.line && '라인', !row.proc && '공정', !row.dt_start && 'Down Time 시작', !row.problem && '문제점'].filter(Boolean);
+    var row = { d: v('dfD'), reporter: v('dfRep'), kind: dfKind || null, line: line, proc: v('dfProc') || null, product: v('dfProd') || null, dt_start: v('dfS'), dt_end: v('dfE') || null, problem: v('dfProb'), action: v('dfAct') || null, etc: v('dfEtc') || null, recur: dfRec };
+    var miss = [!row.d && '날짜', !row.reporter && '보고자', !row.kind && '유형', !row.line && '라인', !row.proc && '공정', !row.dt_start && 'Down Time 시작', !row.problem && '문제점'].filter(Boolean);
     if (miss.length) return say('dfMsg', miss.join(' · ') + ' 을(를) 넣어 주세요.');
     var btn = $('dfSave'); btn.disabled = true; say('dfMsg', '저장 중…', true);
     var st = client.storage.from('defect'), k = 0, news = dfFiles.filter(function (f) { return f.blob; });
@@ -1113,7 +1117,8 @@
       });
     }).catch(function (e) {
       btn.disabled = false; var m = errText(e);
-      if (/defect_notices|relation|bucket|schema cache/i.test(m)) m = '서버 준비가 안 됐습니다 — SQL «261110_불량 공지»를 먼저 실행하세요. (' + m + ')';
+      if (/'kind' column|column .*kind/i.test(m)) m = '유형 칸이 서버에 아직 없습니다 — SQL «261110_불량 공지 유형»을 실행하세요. (' + m + ')';
+      else if (/defect_notices|relation|bucket|schema cache/i.test(m)) m = '서버 준비가 안 됐습니다 — SQL «261110_불량 공지»를 먼저 실행하세요. (' + m + ')';
       say('dfMsg', '저장하지 못했습니다: ' + m);
     });
   }
@@ -1122,9 +1127,9 @@
     b.innerHTML = '<div class="act-ctl"><input type="search" id="dfQ" placeholder="라인 · 공정 · 제품명 · 보고자 · 내용 찾기" value="' + esc(dfForm.q || '') + '"></div><div id="dfTbl"></div>';
     var draw = function () {
       var q = String($('dfQ').value || '').toLowerCase().replace(/\s+/g, ''); dfForm.q = $('dfQ').value;
-      var rows = (dfRows || []).filter(function (r) { return !q || [r.d, r.line, r.proc, r.product, r.reporter, r.problem, r.action, r.etc, r.recur].join(' ').toLowerCase().replace(/\s+/g, '').indexOf(q) >= 0; });
-      $('dfTbl').innerHTML = rows.length ? '<div class="tbl-wrap"><table class="at df-t"><thead><tr><th class="l">날짜</th><th class="l">라인</th><th class="l">공정</th><th class="l">제품명</th><th class="l">보고자</th><th>Down Time</th><th class="l">문제점</th><th>재발</th><th>사진</th></tr></thead><tbody>' +
-        rows.map(function (r) { var m = dfDur(dfT(r.dt_start), dfT(r.dt_end)); return '<tr data-id="' + r.id + '"><td class="l">' + esc(dfDay(r.d)) + '</td><td class="l">' + esc(r.line) + '</td><td class="l nm">' + esc(r.proc || '') + '</td><td class="l">' + esc(r.product || '') + '</td><td class="l">' + esc(r.reporter) + '</td><td>' + esc(dfT(r.dt_start)) + (r.dt_end ? '~' + esc(dfT(r.dt_end)) : '~') + (m ? '<small>' + m + '</small>' : '') + '</td><td class="l df-pb">' + esc(r.problem || '') + '</td><td' + (r.recur === '재발' ? ' class="df-re"' : '') + '>' + esc(r.recur) + '</td><td>' + ((r.photos || []).length || '') + '</td></tr>'; }).join('') +
+      var rows = (dfRows || []).filter(function (r) { return !q || [r.d, r.kind, r.line, r.proc, r.product, r.reporter, r.problem, r.action, r.etc, r.recur].join(' ').toLowerCase().replace(/\s+/g, '').indexOf(q) >= 0; });
+      $('dfTbl').innerHTML = rows.length ? '<div class="tbl-wrap"><table class="at df-t"><thead><tr><th class="l">날짜</th><th class="l">유형</th><th class="l">라인</th><th class="l">공정</th><th class="l">제품명</th><th class="l">보고자</th><th>Down Time</th><th class="l">문제점</th><th>재발</th><th>사진</th></tr></thead><tbody>' +
+        rows.map(function (r) { var m = dfDur(dfT(r.dt_start), dfT(r.dt_end)); return '<tr data-id="' + r.id + '"><td class="l">' + esc(dfDay(r.d)) + '</td><td class="l">' + esc(r.kind || '') + '</td><td class="l">' + esc(r.line) + '</td><td class="l nm">' + esc(r.proc || '') + '</td><td class="l">' + esc(r.product || '') + '</td><td class="l">' + esc(r.reporter) + '</td><td>' + esc(dfT(r.dt_start)) + (r.dt_end ? '~' + esc(dfT(r.dt_end)) : '~') + (m ? '<small>' + m + '</small>' : '') + '</td><td class="l df-pb">' + esc(r.problem || '') + '</td><td' + (r.recur === '재발' ? ' class="df-re"' : '') + '>' + esc(r.recur) + '</td><td>' + ((r.photos || []).length || '') + '</td></tr>'; }).join('') +
         '</tbody></table></div>' : '<div class="pl-none">' + (q ? '찾는 공지가 없습니다.' : '아직 공지가 없습니다.') + '</div>';
       $('dfTbl').querySelectorAll('tr[data-id]').forEach(function (tr) { tr.onclick = function () { var id = +tr.getAttribute('data-id'); dfCur = dfRows.filter(function (x) { return x.id === id; })[0]; dfView = 'det'; dfPaint(); }; });
     };
@@ -1133,15 +1138,15 @@
   // ---------- 보기 ----------
   function dfText(r) {
     var m = dfDur(dfT(r.dt_start), dfT(r.dt_end));
-    return ['[불량 공지] ' + dfDay(r.d) + ' ' + r.line + ' ' + (r.proc || ''), '보고자: ' + r.reporter, '제품명: ' + (r.product || '-'),
-      'Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '재발 유무: ' + r.recur, '', '■ 문제점(원인)', r.problem || '-', '', '■ 조치사항', r.action || '-'].concat(r.etc ? ['', '■ 기타', r.etc] : []).join('\n');
+    return ['[불량 공지] ' + dfDay(r.d) + (r.kind ? ' [' + r.kind + ']' : '') + ' ' + r.line + ' ' + (r.proc || '')].concat(r.kind ? ['유형: ' + r.kind] : []).concat(['보고자: ' + r.reporter, '제품명: ' + (r.product || '-'),
+      'Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '재발 유무: ' + r.recur, '', '■ 문제점(원인)', r.problem || '-', '', '■ 조치사항', r.action || '-']).concat(r.etc ? ['', '■ 기타', r.etc] : []).join('\n');
   }
   function dfPaintDet(b) {
     var r = dfCur; if (!r) { dfView = 'list'; return dfPaint(); }
     var m = dfDur(dfT(r.dt_start), dfT(r.dt_end)), ph = r.photos || [];
     var f = function (k, v, cls) { return '<div class="df-f' + (cls ? ' ' + cls : '') + '"><span>' + k + '</span><div>' + v + '</div></div>'; };
-    b.innerHTML = '<div class="df-det"><div class="df-dh"><b>' + esc(dfDay(r.d)) + ' · ' + esc(r.line) + ' ' + esc(r.proc || '') + '</b>' + (r.recur === '재발' ? '<em class="df-re">재발</em>' : '<em>최초</em>') + '</div>' +
-      '<div class="df-dg">' + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
+    b.innerHTML = '<div class="df-det"><div class="df-dh"><b>' + esc(dfDay(r.d)) + ' · ' + (r.kind ? esc(r.kind) + ' · ' : '') + esc(r.line) + ' ' + esc(r.proc || '') + '</b>' + (r.recur === '재발' ? '<em class="df-re">재발</em>' : '<em>최초</em>') + '</div>' +
+      '<div class="df-dg">' + f('유형', esc(r.kind || '-')) + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
       f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
       (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>'; }).join('') + '</div>' : '') +
       '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">글 복사</button>' + (dfMine(r) ? '<button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
@@ -1157,7 +1162,7 @@
       else window.prompt('복사하세요', t);
     };
     if ($('dfEditB')) $('dfEditB').onclick = function () {
-      dfEdit = r; dfRec = r.recur; dfForm.line = r.line;
+      dfEdit = r; dfRec = r.recur; dfKind = r.kind || ''; dfForm.line = r.line;
       dfFiles = (r.photos || []).map(function (p) { return { path: p.p, w: p.w, h: p.h, url: dfUrls[p.p] || '' }; });
       dfView = 'new'; dfPaint();
     };
