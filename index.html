@@ -981,7 +981,7 @@
     var jobs = [];
     if (!dfLists || force) jobs.push(client.from('prod_state').select('data').eq('section', 'DEFECT').eq('key', 'lists').then(function (r) {
       var d = (!r.error && r.data && r.data[0] && r.data[0].data) || {};
-      dfLists = { reporters: d.reporters && d.reporters.length ? d.reporters : DF_DEF.reporters.slice(), procs: { TCP: (d.procs && d.procs.TCP) || DF_DEF.procs.TCP.slice(), FE: (d.procs && d.procs.FE) || DF_DEF.procs.FE.slice() } };
+      dfLists = { mailUrl: d.mailUrl || '', reporters: d.reporters && d.reporters.length ? d.reporters : DF_DEF.reporters.slice(), procs: { TCP: (d.procs && d.procs.TCP) || DF_DEF.procs.TCP.slice(), FE: (d.procs && d.procs.FE) || DF_DEF.procs.FE.slice() } };
     }));
     if (!planData) jobs.push(client.from('prod_state').select('key,updated_at,plan:data->plan,files:data->files,parsedAt:data->>parsedAt').eq('section', 'PLAN').then(function (r) { if (!r.error) planData = planRows(r.data || []); }));
     if (!dfRows || force) jobs.push(client.from('defect_notices').select('*').order('d', { ascending: false }).order('id', { ascending: false }).limit(300).then(function (r) {
@@ -996,6 +996,22 @@
     (dfRows || []).forEach(function (r) { if (r.line === line && r.proc === proc) add(r.product); });
     L.forEach(function (x) { if (x.plant === line) add(x.item); });
     return a;
+  }
+  // 메일: Apps Script 웹앱에 {공지 번호, 로그인 토큰} 만 보냄 → 웹앱이 서버에서 공지를 읽어 정해진 주소로 보냄
+  function dfMail(id, resend) {
+    var url = dfLists && dfLists.mailUrl;
+    if (!url) return Promise.resolve({ ok: false, none: true, error: '메일 보낼 웹앱 주소가 아직 없습니다 (관리자 «선택 목록 고치기»)' });
+    return client.auth.getSession().then(function (s) {
+      var tk = s && s.data && s.data.session && s.data.session.access_token; if (!tk) throw new Error('로그인 정보가 없습니다');
+      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ id: id, token: tk, resend: !!resend }) }).then(function (r) { return r.json(); });
+    });
+  }
+  function dfMailSay(p) {
+    say('dfMsg', '메일 보내는 중…', true);
+    p.then(function (x) {
+      if (x && x.ok) say('dfMsg', x.skipped ? '이미 메일을 보냈습니다' : '메일을 보냈습니다' + (x.to ? ' → ' + x.to : ''), true);
+      else say('dfMsg', (x && x.none ? '저장했습니다 — ' : '메일을 보내지 못했습니다: ') + ((x && x.error) || '알 수 없는 오류'));
+    }).catch(function (e) { say('dfMsg', '메일을 보내지 못했습니다: ' + errText(e)); });
   }
   function dfDur(s, e) { if (!s || !e) return ''; var p = function (t) { var m = /^(\d\d):(\d\d)/.exec(t); return m ? +m[1] * 60 + +m[2] : null; }; var a = p(s), b = p(e); if (a == null || b == null) return ''; return ((b - a + 1440) % 1440) + '분'; }
   function dfT(t) { return t ? String(t).slice(0, 5) : ''; }
@@ -1112,8 +1128,8 @@
           var gone = (dfEdit.photos || []).map(function (p) { return p.p; }).filter(function (p) { return p && !keep[p]; });
           if (gone.length) st.remove(gone);
         }
-        dfEdit = null; dfFiles = [];
-        return dfLoad(true).then(function () { dfCur = saved && dfRows.filter(function (x) { return x.id === saved.id; })[0] || saved; dfView = 'det'; dfPaint(); });
+        var wasNew = !dfEdit; dfEdit = null; dfFiles = [];
+        return dfLoad(true).then(function () { dfCur = saved && dfRows.filter(function (x) { return x.id === saved.id; })[0] || saved; dfView = 'det'; dfPaint(); if (wasNew && saved) dfMailSay(dfMail(saved.id)); });
       });
     }).catch(function (e) {
       btn.disabled = false; var m = errText(e);
@@ -1149,13 +1165,14 @@
       '<div class="df-dg">' + f('유형', esc(r.kind || '-')) + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
       f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
       (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>'; }).join('') + '</div>' : '') +
-      '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">글 복사</button>' + (dfMine(r) ? '<button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
+      '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">글 복사</button>' + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">메일 다시 보내기</button><button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc((r.created_at ? '작성 ' + hm(r.created_at) : '') + (r.updated_at && r.created_at && r.updated_at.slice(0, 16) !== r.created_at.slice(0, 16) ? ' · 고침 ' + hm(r.updated_at) : '')) + '</p></div>';
     if (ph.length) client.storage.from('defect').createSignedUrls(ph.map(function (p) { return p.p; }), 3600).then(function (x) {
       var L = (x && x.data) || [];
       document.querySelectorAll('#dfPv [data-i]').forEach(function (a) { var u = L[+a.getAttribute('data-i')]; u = u && u.signedUrl; if (u) { a.href = u; a.innerHTML = '<img src="' + esc(u) + '" alt="">'; dfUrls[ph[+a.getAttribute('data-i')].p] = u; } else a.innerHTML = '<span>사진 없음</span>'; });
     });
     $('dfBack').onclick = function () { dfView = 'list'; dfPaint(); };
+    if ($('dfMailB')) $('dfMailB').onclick = function () { dfMailSay(dfMail(r.id, true)); };
     $('dfCopy').onclick = function () {
       var t = dfText(r), done = function () { say('dfMsg', '복사했습니다 — 카톡·메일에 붙여넣기', true); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { window.prompt('복사하세요', t); });
@@ -1182,12 +1199,14 @@
     var b = $('dfBody'), L = dfLists;
     b.innerHTML = '<div class="df-g"><label class="w2">보고자 <small>한 줄에 하나</small><textarea id="dlRep" rows="6">' + esc(L.reporters.join('\n')) + '</textarea></label>' +
       '<label>TCP 공정 <small>한 줄에 하나</small><textarea id="dlTcp" rows="8">' + esc(L.procs.TCP.join('\n')) + '</textarea></label>' +
-      '<label>FE 공정 <small>한 줄에 하나</small><textarea id="dlFe" rows="8">' + esc(L.procs.FE.join('\n')) + '</textarea></label></div>' +
+      '<label>FE 공정 <small>한 줄에 하나</small><textarea id="dlFe" rows="8">' + esc(L.procs.FE.join('\n')) + '</textarea></label>' +
+      '<label class="w2">메일 보내는 웹앱 주소 <small>Apps Script «불량 공지 메일» 배포 URL · 받는 사람은 그 스크립트 안에서 정함</small><input type="text" id="dlMail" value="' + esc(L.mailUrl || '') + '" placeholder="https://script.google.com/macros/s/…/exec"></label></div>' +
       '<div class="df-btns"><button class="btn-p" type="button" id="dlSave">저장</button><button class="btn-l" type="button" id="dlBack">돌아가기</button><div id="dfMsg" class="msg"></div></div>';
     var lines = function (id) { return String($(id).value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); };
     $('dlBack').onclick = function () { dfPaint(); };
     $('dlSave').onclick = function () {
-      var next = { reporters: lines('dlRep'), procs: { TCP: lines('dlTcp'), FE: lines('dlFe') } };
+      var next = { reporters: lines('dlRep'), procs: { TCP: lines('dlTcp'), FE: lines('dlFe') }, mailUrl: String($('dlMail').value || '').trim() };
+      if (next.mailUrl && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(next.mailUrl)) return say('dfMsg', '웹앱 주소는 https://script.google.com/macros/s/…/exec 모양이어야 합니다.');
       if (!next.reporters.length || !next.procs.TCP.length || !next.procs.FE.length) return say('dfMsg', '비어 있는 목록이 있습니다.');
       say('dfMsg', '저장 중…', true);
       client.from('prod_state').upsert({ section: 'DEFECT', key: 'lists', data: next, updated_by: me.email }, { onConflict: 'section,key' }).then(function (r) {
