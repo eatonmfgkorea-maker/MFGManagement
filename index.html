@@ -1153,11 +1153,16 @@
     $('dfQ').oninput = draw; draw();
   }
   // ---------- 보기 ----------
-  function dfText(r) {
+  function dfText(r) {   // 카톡·메일에 붙여넣는 글 (빈 줄 없이, 항목마다 ■)
     var m = dfDur(dfT(r.dt_start), dfT(r.dt_end));
-    return ['[불량 공지] ' + dfDay(r.d) + (r.kind ? ' [' + r.kind + ']' : '') + ' ' + r.line + ' ' + (r.proc || '')].concat(r.kind ? ['유형: ' + r.kind] : []).concat(['보고자: ' + r.reporter, '제품명: ' + (r.product || '-'),
-      'Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '재발 유무: ' + r.recur, '', '■ 문제점(원인)', r.problem || '-', '', '■ 조치사항', r.action || '-']).concat(r.etc ? ['', '■ 기타', r.etc] : []).join('\n');
+    return ['[불량 공지] ' + dfDay(r.d) + (r.kind ? ' [' + r.kind + ']' : '') + ' ' + r.line + ' ' + (r.proc || '')]
+      .concat(r.kind ? ['■ 유형: ' + r.kind] : [])
+      .concat(['■ 보고자: ' + r.reporter, '■ 제품명: ' + (r.product || '-'),
+        '■ Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '■ 재발 유무: ' + r.recur,
+        '■ 문제점(원인)', r.problem || '-', '■ 조치사항', r.action || '-'])
+      .concat(r.etc ? ['■ 기타', r.etc] : []).join('\n');
   }
+
   function dfPaintDet(b) {
     var r = dfCur; if (!r) { dfView = 'list'; return dfPaint(); }
     var m = dfDur(dfT(r.dt_start), dfT(r.dt_end)), ph = r.photos || [];
