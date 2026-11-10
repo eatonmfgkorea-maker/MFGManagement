@@ -1028,9 +1028,9 @@
       '<label>보고자<select id="dfRep">' + opt(dfLists.reporters, rep) + '</select></label>' +
       '<div><span class="lb">라인</span><div class="seg" id="dfLine"><button type="button" data-v="TCP">TCP</button><button type="button" data-v="FE">FE</button></div></div>' +
       '<label>공정<select id="dfProc"></select></label>' +
-      '<label class="w2">제품명<input type="text" id="dfProd" list="dfProdL" autocomplete="off" placeholder="고르거나 직접 입력" value="' + esc(E.product || '') + '"><datalist id="dfProdL"></datalist></label>' +
+      '<label class="w2">제품명<input type="text" id="dfProd" autocomplete="off" value="' + esc(E.product || '') + '"></label>' +
       '<div class="w2"><span class="lb">Down Time <small>시작은 꼭 · 종료는 선택</small></span><div class="df-dt"><input type="time" id="dfS" value="' + esc(dfT(E.dt_start)) + '"><span>~</span><input type="time" id="dfE" value="' + esc(dfT(E.dt_end)) + '"><b id="dfMin"></b></div></div>' +
-      '<label class="w2">문제점 (인원)<textarea id="dfProb" rows="3">' + esc(E.problem || '') + '</textarea></label>' +
+      '<label class="w2">문제점 (원인)<textarea id="dfProb" rows="3">' + esc(E.problem || '') + '</textarea></label>' +
       '<label class="w2">조치사항<textarea id="dfAct" rows="3">' + esc(E.action || '') + '</textarea></label>' +
       '<label class="w2">기타<textarea id="dfEtc" rows="2">' + esc(E.etc || '') + '</textarea></label>' +
       '<div><span class="lb">재발 유무</span><div class="seg" id="dfRec"><button type="button" data-v="최초">최초</button><button type="button" data-v="재발">재발</button></div></div>' +
@@ -1044,7 +1044,6 @@
       $('dfProc').innerHTML = v ? opt(list, cur) : '<option value="">라인을 먼저 고르세요</option>';
       setProd();
     }, setProd = function () {
-      $('dfProdL').innerHTML = dfItems(line, $('dfProc').value).map(function (x) { return '<option value="' + esc(x) + '">'; }).join('');
     }, setRec = function (v) { dfRec = v; document.querySelectorAll('#dfRec button').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-v') === v); }); },
     setMin = function () { var m = dfDur($('dfS').value, $('dfE').value); $('dfMin').textContent = m ? m : ''; };
     document.querySelectorAll('#dfLine button').forEach(function (x) { x.onclick = function () { setLine(x.getAttribute('data-v')); }; });
@@ -1133,7 +1132,7 @@
   function dfText(r) {
     var m = dfDur(dfT(r.dt_start), dfT(r.dt_end));
     return ['[불량 공지] ' + dfDay(r.d) + ' ' + r.line + ' ' + (r.proc || ''), '보고자: ' + r.reporter, '제품명: ' + (r.product || '-'),
-      'Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '재발 유무: ' + r.recur, '', '■ 문제점(인원)', r.problem || '-', '', '■ 조치사항', r.action || '-'].concat(r.etc ? ['', '■ 기타', r.etc] : []).join('\n');
+      'Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '재발 유무: ' + r.recur, '', '■ 문제점(원인)', r.problem || '-', '', '■ 조치사항', r.action || '-'].concat(r.etc ? ['', '■ 기타', r.etc] : []).join('\n');
   }
   function dfPaintDet(b) {
     var r = dfCur; if (!r) { dfView = 'list'; return dfPaint(); }
@@ -1141,7 +1140,7 @@
     var f = function (k, v, cls) { return '<div class="df-f' + (cls ? ' ' + cls : '') + '"><span>' + k + '</span><div>' + v + '</div></div>'; };
     b.innerHTML = '<div class="df-det"><div class="df-dh"><b>' + esc(dfDay(r.d)) + ' · ' + esc(r.line) + ' ' + esc(r.proc || '') + '</b>' + (r.recur === '재발' ? '<em class="df-re">재발</em>' : '<em>최초</em>') + '</div>' +
       '<div class="df-dg">' + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
-      f('문제점 (인원)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
+      f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
       (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>'; }).join('') + '</div>' : '') +
       '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">글 복사</button>' + (dfMine(r) ? '<button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc((r.created_at ? '작성 ' + hm(r.created_at) : '') + (r.updated_at && r.created_at && r.updated_at.slice(0, 16) !== r.created_at.slice(0, 16) ? ' · 고침 ' + hm(r.updated_at) : '')) + '</p></div>';
