@@ -1163,6 +1163,29 @@
       .concat(r.etc ? ['■ 기타', r.etc] : []).join('\n');
   }
 
+  function dfMobile() { try { return !!navigator.share && matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } }
+  function dfCopyText(t) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function () { return true; }, function () { return false; });
+    return Promise.resolve(false);
+  }
+  // 휴대폰: 글을 복사해 두고 공유 창을 띄움(카카오톡 고르면 바로 채팅방 선택) · PC: 글 복사
+  // (아이폰은 누른 순간에 바로 공유 창을 열어야 해서, 사진 파일은 보기 화면을 열 때 미리 받아 둠)
+  var dfShareFiles = {};
+  function dfPrefetch(r) {
+    if (!dfMobile() || dfShareFiles[r.id]) return;
+    var ph = (r.photos || []).map(function (p) { return dfUrls[p.p]; }).filter(Boolean); if (!ph.length) return;
+    Promise.all(ph.map(function (u, i) { return fetch(u).then(function (x) { return x.blob(); }).then(function (bl) { return new File([bl], '불량공지_' + r.d + '_' + (i + 1) + '.jpg', { type: 'image/jpeg' }); }); }))
+      .then(function (fs) { dfShareFiles[r.id] = fs; }).catch(function () {});
+  }
+  function dfShare(r) {
+    var t = dfText(r);
+    if (!dfMobile()) return dfCopyText(t).then(function (ok) { if (ok) say('dfMsg', '복사했습니다 — 카톡·메일에 붙여넣기', true); else window.prompt('복사하세요', t); });
+    var files = dfShareFiles[r.id] || [], data = { title: '불량 공지', text: t };
+    try { if (files.length && navigator.canShare && navigator.canShare({ files: files })) data.files = files; } catch (e) {}
+    dfCopyText(t);
+    navigator.share(data).then(function () { say('dfMsg', '공유했습니다' + (data.files ? ' (사진 ' + data.files.length + '장 포함 · 글이 빠지면 채팅창에 붙여넣기)' : ''), true); })
+      .catch(function (e) { if (e && e.name === 'AbortError') return; say('dfMsg', '공유 창을 열지 못했습니다 — 글은 복사됐으니 카톡에 붙여넣으세요'); });
+  }
   function dfPaintDet(b) {
     var r = dfCur; if (!r) { dfView = 'list'; return dfPaint(); }
     var m = dfDur(dfT(r.dt_start), dfT(r.dt_end)), ph = r.photos || [];
@@ -1171,19 +1194,16 @@
       '<div class="df-dg">' + f('유형', esc(r.kind || '-')) + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
       f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
       (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>'; }).join('') + '</div>' : '') +
-      '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">글 복사</button>' + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">메일 다시 보내기</button><button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
+      '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">' + (dfMobile() ? '카톡 공유' : '글 복사') + '</button>' + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">메일 다시 보내기</button><button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc((r.created_at ? '작성 ' + hm(r.created_at) : '') + (r.updated_at && r.created_at && r.updated_at.slice(0, 16) !== r.created_at.slice(0, 16) ? ' · 고침 ' + hm(r.updated_at) : '')) + '</p></div>';
     if (ph.length) client.storage.from('defect').createSignedUrls(ph.map(function (p) { return p.p; }), 3600).then(function (x) {
       var L = (x && x.data) || [];
       document.querySelectorAll('#dfPv [data-i]').forEach(function (a) { var u = L[+a.getAttribute('data-i')]; u = u && u.signedUrl; if (u) { a.href = u; a.innerHTML = '<img src="' + esc(u) + '" alt="">'; dfUrls[ph[+a.getAttribute('data-i')].p] = u; } else a.innerHTML = '<span>사진 없음</span>'; });
+      dfPrefetch(r);
     });
     $('dfBack').onclick = function () { dfView = 'list'; dfPaint(); };
     if ($('dfMailB')) $('dfMailB').onclick = function () { dfMailSay(dfMail(r.id, true)); };
-    $('dfCopy').onclick = function () {
-      var t = dfText(r), done = function () { say('dfMsg', '복사했습니다 — 카톡·메일에 붙여넣기', true); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { window.prompt('복사하세요', t); });
-      else window.prompt('복사하세요', t);
-    };
+    $('dfCopy').onclick = function () { dfShare(r); };
     if ($('dfEditB')) $('dfEditB').onclick = function () {
       dfEdit = r; dfRec = r.recur; dfKind = r.kind || ''; dfForm.line = r.line;
       dfFiles = (r.photos || []).map(function (p) { return { path: p.p, w: p.w, h: p.h, url: dfUrls[p.p] || '' }; });
