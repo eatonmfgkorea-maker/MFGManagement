@@ -975,13 +975,14 @@
   // 공정 → 생산계획 라인 이름 (제품명 고르기용)
   var DF_PLAN_LINE = { '1PC': '1PC', '2PC': '2PC', 'A/FLVV': 'Auto Module FLVV', 'M/FLVV': 'Manual FLVV', 'C/FLVV': 'Combo FLVV', 'A/GVV': 'Auto GVV', 'M/GVV': 'New(MNL) GVV', 'LVS': 'LVS', 'UCC': 'UCC', 'MEM': 'Membrane', 'FTIV': 'FTIV', 'New ICV': 'New ICV', 'Old ICV': 'Old ICV' };
   var DF_KINDS = ['설비', '자재', '품질'];
+  var DF_MAIL_URL = 'https://script.google.com/macros/s/AKfycbzeEfPyQWHFUWeKBXalMVTUy4GtaWcVfq4A9UAvp1biOq2snfiCiNYhtIap7R_41nP_/exec';   // «불량 공지 메일» 웹앱 (관리자 화면에서 바꾸면 그 값 우선)
   var dfLists = null, dfRows = null, dfView = 'new', dfCur = null, dfEdit = null, dfFiles = [], dfRec = '최초', dfKind = '', dfAfterLogin = false, dfUrls = {};
   function dfMine(r) { return me && (me.isAdmin || String(r.created_by || '').toLowerCase() === String(me.email || '').toLowerCase()); }
   function dfLoad(force) {
     var jobs = [];
     if (!dfLists || force) jobs.push(client.from('prod_state').select('data').eq('section', 'DEFECT').eq('key', 'lists').then(function (r) {
       var d = (!r.error && r.data && r.data[0] && r.data[0].data) || {};
-      dfLists = { mailUrl: d.mailUrl || '', reporters: d.reporters && d.reporters.length ? d.reporters : DF_DEF.reporters.slice(), procs: { TCP: (d.procs && d.procs.TCP) || DF_DEF.procs.TCP.slice(), FE: (d.procs && d.procs.FE) || DF_DEF.procs.FE.slice() } };
+      dfLists = { mailUrl: d.mailUrl || DF_MAIL_URL, reporters: d.reporters && d.reporters.length ? d.reporters : DF_DEF.reporters.slice(), procs: { TCP: (d.procs && d.procs.TCP) || DF_DEF.procs.TCP.slice(), FE: (d.procs && d.procs.FE) || DF_DEF.procs.FE.slice() } };
     }));
     if (!planData) jobs.push(client.from('prod_state').select('key,updated_at,plan:data->plan,files:data->files,parsedAt:data->>parsedAt').eq('section', 'PLAN').then(function (r) { if (!r.error) planData = planRows(r.data || []); }));
     if (!dfRows || force) jobs.push(client.from('defect_notices').select('*').order('d', { ascending: false }).order('id', { ascending: false }).limit(300).then(function (r) {
