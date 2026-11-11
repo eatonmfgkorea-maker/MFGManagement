@@ -304,6 +304,16 @@
   .pm-f span { min-width:0; display:flex; flex-direction:column; }
   .pm-f b { font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .pm-f small { font-size:11px; opacity:0.7; }
+  .pm-pend > .pm-pick { flex:0 0 100%; display:block; min-width:0; }
+  .pm-pick p { font-size:12px; color:var(--muted); margin:4px 0 8px; }
+  .pm-pick > div { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:6px; }
+  .pm-pick label { display:flex; align-items:center; gap:8px; border:1.5px solid var(--num); border-radius:2px; padding:5px 6px; cursor:pointer; min-width:0; opacity:0.55; }
+  .pm-pick label.on { border-color:var(--ink); opacity:1; background:#F7F6F2; }
+  .pm-pick input { width:18px; height:18px; flex:none; accent-color:var(--ink); }
+  .pm-pick img, .pm-pick i { width:44px; height:44px; flex:none; object-fit:contain; background:#fff; border:1px solid var(--num); display:flex; align-items:center; justify-content:center; font-style:normal; font-size:10px; font-weight:900; }
+  .pm-pick span { min-width:0; display:flex; flex-direction:column; }
+  .pm-pick b { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pm-pick small { font-size:11px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -610,24 +620,50 @@
     doc.querySelectorAll('body style').forEach(function (s) { s.remove(); });
     return st + (doc.body ? doc.body.innerHTML : '');
   }
-  // PNG 는 흰 바탕 JPG 로 바꿔 올림 (투명한 배경이 내려받은 뒤 검게 보이는 것 방지)
-  function pmToJpg(f) {
-    if (!/^image\/png/i.test(f.type || '') && !/\.png$/i.test(f.name || '')) return Promise.resolve();
-    return new Promise(function (ok) {
-      var url = URL.createObjectURL(new Blob([f.data], { type: 'image/png' })), img = new Image();
-      var end = function () { URL.revokeObjectURL(url); ok(); };
-      img.onload = function () {
-        try {
-          var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
-          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0);
-          c.toBlob(function (bl) {
-            if (!bl) return end();
-            bl.arrayBuffer().then(function (ab) { f.data = new Uint8Array(ab); f.type = 'image/jpeg'; f.name = String(f.name || 'image').replace(/\.png$/i, '') + '.jpg'; end(); }, end);
-          }, 'image/jpeg', 0.92);
-        } catch (e) { end(); }
-      };
-      img.onerror = end; img.src = url;
+  // 올리기 전 준비: 그림마다 지문(같은 서명 그림 알아보기)·크기를 재고, PNG 는 흰 바탕 JPG 로 바꿈(투명 배경이 검게 보이는 것 방지)
+  var PM_SKIP = 'pmSkipImgs';
+  function pmSkipGet() { try { return JSON.parse(localStorage.getItem(PM_SKIP) || '{}') || {}; } catch (e) { return {}; } }
+  function pmSkipSet(h, on) { try { var o = pmSkipGet(); if (on) o[h] = 1; else delete o[h]; localStorage.setItem(PM_SKIP, JSON.stringify(o)); } catch (e) {} }
+  function pmHash(u8) {
+    if (!(window.crypto && crypto.subtle)) return Promise.resolve('n' + u8.length);
+    return crypto.subtle.digest('SHA-1', u8).then(function (d) { return [].map.call(new Uint8Array(d), function (x) { return ('0' + x.toString(16)).slice(-2); }).join(''); }, function () { return 'n' + u8.length; });
+  }
+  function pmPrep(f) {
+    return pmHash(f.data).then(function (h) {
+      f.hash = h;
+      if (!pmIsImg(f)) return;
+      return new Promise(function (ok) {
+        var isPng = /^image\/png/i.test(f.type || '') || /\.png$/i.test(f.name || '');
+        var url = URL.createObjectURL(new Blob([f.data], { type: f.type || 'image/png' })), img = new Image();
+        var end = function () { f.thumb = URL.createObjectURL(new Blob([f.data], { type: f.type || 'image/jpeg' })); URL.revokeObjectURL(url); ok(); };
+        img.onload = function () {
+          f.w = img.naturalWidth; f.h = img.naturalHeight;
+          if (!isPng) return end();
+          try {
+            var c = document.createElement('canvas'); c.width = f.w; c.height = f.h;
+            var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0);
+            c.toBlob(function (bl) {
+              if (!bl) return end();
+              bl.arrayBuffer().then(function (ab) { f.data = new Uint8Array(ab); f.type = 'image/jpeg'; f.name = String(f.name || 'image').replace(/\.png$/i, '') + '.jpg'; end(); }, end);
+            }, 'image/jpeg', 0.92);
+          } catch (e) { end(); }
+        };
+        img.onerror = end; img.src = url;
+      });
     });
+  }
+  // 본문에서 링크가 걸린 그림(서명 배너·SNS 아이콘) 찾기 / 뺀 그림을 본문에서도 지우기
+  function pmCidSrc(im) { var m = /^cid:(.+)$/i.exec(im.getAttribute('src') || ''); if (!m) return ''; try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+  function pmLinked(html) { var t = document.createElement('template'), o = {}; t.innerHTML = html; t.content.querySelectorAll('img').forEach(function (im) { var c = pmCidSrc(im); if (c && im.closest('a')) o[c] = 1; }); return o; }
+  function pmDropImgs(html, cids) {
+    if (!Object.keys(cids).length) return html;
+    var t = document.createElement('template'); t.innerHTML = html;
+    t.content.querySelectorAll('img').forEach(function (im) {
+      if (!cids[pmCidSrc(im)]) return;
+      var a = im.closest('a'); im.remove();
+      if (a && !a.textContent.trim() && !a.querySelector('img')) a.remove();
+    });
+    return t.innerHTML;
   }
   function pmSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
   function pmIsImg(f) { return /^image\/(png|jpe?g|gif|bmp|webp)/i.test(f.type || '') || /\.(png|jpe?g|gif|bmp|webp)$/i.test(f.name || ''); }
@@ -671,12 +707,16 @@
     if (file.size > 60 * 1048576) return say('pmMsg', '파일이 너무 큽니다 (60MB까지).');
     say('pmMsg', '메일 읽는 중…', true);
     pmLib().then(function () { return file.arrayBuffer(); }).then(function (buf) { return window.MailParse.parseMail(buf, file.name); }).then(function (m) {
-      return Promise.all(m.files.map(pmToJpg)).then(function () { return m; });
+      return Promise.all(m.files.map(pmPrep)).then(function () { return m; });
     }).then(function (m) {
       var html = pmClean(m.html || '');
       if (!html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, '').trim() && !/<img/i.test(html) && m.text) html = '<pre style="white-space:pre-wrap;font:inherit">' + esc(m.text) + '</pre>';
       if (html.length > 3000000) html = '<pre style="white-space:pre-wrap;font:inherit">' + esc(m.text || '(본문이 너무 길어 글만 저장했습니다)') + '</pre>';
       var big = m.files.filter(function (f) { return f.data.length > 25 * 1048576; });
+      var skip = pmSkipGet(), linked = pmLinked(html);
+      m.files.forEach(function (f) {   // 서명 그림으로 보이는 것은 처음부터 빼 둠: 전에 뺀 그림 · 링크 걸린 그림 · 아주 작은 그림
+        f.keep = !(skip[f.hash] || (pmIsImg(f) && f.inline && (linked[f.cid] || (f.w && f.h && f.w <= 80 && f.h <= 80))));
+      });
       pmPend = { m: m, html: html, src: file.name, files: m.files.filter(function (f) { return f.data.length <= 25 * 1048576; }), big: big.map(function (f) { return f.name; }) };
       say('pmMsg', ''); pmPendPaint();
     }).catch(function (e) { say('pmMsg', '메일을 읽지 못했습니다: ' + errText(e)); });
@@ -684,16 +724,23 @@
   function pmPendPaint() {
     var el = $('pmPend'); if (!el) return;
     if (!pmPend) { el.innerHTML = ''; return; }
-    var m = pmPend.m, fs = pmPend.files, im = fs.filter(pmIsImg).length;
+    var m = pmPend.m, fs = pmPend.files, kp = fs.filter(function (f) { return f.keep; }), im = kp.filter(pmIsImg).length;
     var dup = (pmRows || []).some(function (r) { return (r.subject || '') === (m.subject || '') && r.sent_at && m.date && new Date(r.sent_at).getTime() === new Date(m.date).getTime(); });
-    el.innerHTML = '<div class="pm-pend"><div><b>' + esc(m.subject || '(제목 없음)') + '</b><span>' + esc([m.from, hm(m.date), '사진 ' + im + '장', '첨부 ' + (fs.length - im) + '개'].filter(Boolean).join(' · ')) + '</span>' +
+    el.innerHTML = '<div class="pm-pend"><div><b>' + esc(m.subject || '(제목 없음)') + '</b><span id="pmCnt">' + esc([m.from, hm(m.date), '사진 ' + im + '장', '첨부 ' + (kp.length - im) + '개'].filter(Boolean).join(' · ')) + '</span>' +
       (pmPend.big.length ? '<span class="df-re">25MB가 넘어 빠지는 파일: ' + esc(pmPend.big.join(', ')) + '</span>' : '') + (dup ? '<span class="df-re">같은 제목 · 같은 시각의 메일이 이미 있습니다.</span>' : '') + '</div>' +
-      '<button class="btn-p" type="button" id="pmUp">' + (dup ? '그래도 올리기' : '올리기') + '</button><button class="btn-l" type="button" id="pmNo">취소</button></div>';
+      '<button class="btn-p" type="button" id="pmUp">' + (dup ? '그래도 올리기' : '올리기') + '</button><button class="btn-l" type="button" id="pmNo">취소</button>' +
+      (fs.length ? '<div class="pm-pick"><p>올릴 것만 체크하세요 — 서명 그림(로고·아이콘)은 빼면 됩니다. 한 번 뺀 그림은 다음부터 자동으로 빠집니다.</p><div>' +
+        fs.map(function (f, i) { return '<label class="' + (f.keep ? 'on' : '') + '"><input type="checkbox" data-i="' + i + '"' + (f.keep ? ' checked' : '') + '>' + (f.thumb ? '<img src="' + esc(f.thumb) + '" alt="">' : '<i>' + esc(((/\.([A-Za-z0-9]+)$/.exec(f.name) || [])[1] || '파일').toUpperCase()) + '</i>') + '<span><b>' + esc(f.name) + '</b><small>' + pmSize(f.data.length) + (f.w ? ' · ' + f.w + '×' + f.h : '') + '</small></span></label>'; }).join('') + '</div></div>' : '') + '</div>';
     $('pmNo').onclick = function () { pmPend = null; pmPendPaint(); };
     $('pmUp').onclick = pmUpload;
+    el.querySelectorAll('.pm-pick input').forEach(function (c) {
+      c.onchange = function () { var f = fs[+c.getAttribute('data-i')]; f.keep = c.checked; if (pmIsImg(f) && f.hash) pmSkipSet(f.hash, !f.keep); pmPendPaint(); };
+    });
   }
   function pmUpload() {
     var P = pmPend; if (!P) return; var m = P.m, st = client.storage.from('planmail');
+    var drop = {}; P.files.forEach(function (f) { if (!f.keep && f.cid) drop[f.cid] = 1; });
+    P = { m: m, src: P.src, html: pmDropImgs(P.html, drop), files: P.files.filter(function (f) { return f.keep; }) };
     var d = m.date ? new Date(m.date) : new Date(), dir = ymd(d).slice(0, 7) + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '/';
     $('pmUp').disabled = true; var done = [], k = 0;
     var up = P.files.reduce(function (p, f, i) {
