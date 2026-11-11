@@ -690,7 +690,7 @@
   function pmSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
   function pmIsImg(f) { return /^image\/(png|jpe?g|gif|bmp|webp)/i.test(f.type || '') || /\.(png|jpe?g|gif|bmp|webp)$/i.test(f.name || ''); }
   function pmLoad() {
-    return client.from('plan_mails').select('id,subject,sent_at,from_name,to_names,files,created_by,created_at').order('sent_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false }).limit(300).then(function (r) {
+    return client.from('plan_mails').select('id,subject,sent_at,from_name,files,created_by,created_at').order('sent_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false }).limit(300).then(function (r) {
       if (r.error) throw r.error; pmRows = r.data || [];
     });
   }
@@ -717,7 +717,7 @@
   function pmDraw() {
     var el = $('pmTbl'); if (!el || !pmRows) return;
     var q = pmQ.toLowerCase().replace(/\s+/g, '');
-    var rows = pmRows.filter(function (r) { return !q || [r.subject, r.from_name, r.to_names].join(' ').toLowerCase().replace(/\s+/g, '').indexOf(q) >= 0; });
+    var rows = pmRows.filter(function (r) { return !q || [r.subject, r.from_name].join(' ').toLowerCase().replace(/\s+/g, '').indexOf(q) >= 0; });
     el.innerHTML = rows.length ? '<div class="tbl-wrap"><table class="at df-t"><thead><tr><th class="l">보낸 날짜</th><th class="l">제목</th><th class="l">보낸 사람</th><th>사진</th><th>첨부</th></tr></thead><tbody>' +
       rows.map(function (r) { var fs = r.files || [], im = fs.filter(pmIsImg).length; return '<tr data-id="' + r.id + '"><td class="l">' + esc(hm(r.sent_at || r.created_at)) + '</td><td class="l nm pm-sj">' + esc(r.subject || '(제목 없음)') + '</td><td class="l">' + esc(r.from_name || '') + '</td><td>' + (im || '') + '</td><td>' + ((fs.length - im) || '') + '</td></tr>'; }).join('') +
       '</tbody></table></div>' : '<div class="pl-none">' + (q ? '찾는 메일이 없습니다.' : '아직 올린 메일이 없습니다.') + '</div>';
@@ -780,7 +780,7 @@
     }, Promise.resolve());
     up.then(function () {
       say('pmMsg', '저장 중…', true);
-      var row = { subject: m.subject || '', sent_at: m.date || null, from_name: m.from || '', to_names: (m.to || []).join(', '), cc_names: (m.cc || []).join(', '), body_html: P.html, src_name: P.src,
+      var row = { subject: m.subject || '', sent_at: m.date || null, from_name: m.from || '', body_html: P.html, src_name: P.src,
         files: P.files.map(function (f) { return { p: f.path, name: f.name, type: f.type, size: f.data.length, cid: f.cid || '', inline: !!f.inline }; }) };
       return client.from('plan_mails').insert(row).select('id').then(function (r) { if (r.error) throw r.error; return r.data[0].id; });
     }).then(function (id) {
@@ -810,7 +810,7 @@
     var mine = me && (me.isAdmin || String(r.created_by || '').toLowerCase() === String(me.email || '').toLowerCase());
     var fileRow = function (f) { return '<a class="pm-f" href="' + esc(dl(f)) + '" target="_blank" rel="noopener">' + (pmIsImg(f) && u[f.p] ? '<img src="' + esc(u[f.p]) + '" alt="">' : '<i>' + esc(((/\.([A-Za-z0-9]+)$/.exec(f.name) || [])[1] || '파일').toUpperCase()) + '</i>') + '<span><b>' + esc(f.name) + '</b><small>' + pmSize(f.size || 0) + ' · 내려받기</small></span></a>'; };
     b.innerHTML = '<div class="df-det"><div class="df-dh"><b class="pm-h">' + esc(r.subject || '(제목 없음)') + '</b></div>' +
-      '<p class="act-note pm-meta">' + esc([r.from_name && '보낸 사람 ' + r.from_name, r.sent_at && hm(r.sent_at), r.to_names && '받는 사람 ' + r.to_names, r.cc_names && '참조 ' + r.cc_names].filter(Boolean).join('  ·  ')) + '</p>' +
+      '<p class="act-note pm-meta">' + esc([r.from_name && '보낸 사람 ' + r.from_name, r.sent_at && hm(r.sent_at)].filter(Boolean).join('  ·  ')) + '</p>' +
       '<iframe id="pmBody" class="pm-body" sandbox="allow-same-origin allow-popups" title="메일 본문"></iframe>' +
       (imgs.length ? '<h3 class="pm-sub">사진 ' + imgs.length + '장' + (imgs.length > 1 ? '<button class="btn-l" type="button" id="pmAll">모두 내려받기</button>' : '') + '</h3><div class="pm-fl">' + imgs.map(fileRow).join('') + '</div>' : '') +
       (etc.length ? '<h3 class="pm-sub">첨부 파일 ' + etc.length + '개</h3><div class="pm-fl">' + etc.map(fileRow).join('') + '</div>' : '') +
