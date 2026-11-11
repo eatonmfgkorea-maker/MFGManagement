@@ -610,6 +610,25 @@
     doc.querySelectorAll('body style').forEach(function (s) { s.remove(); });
     return st + (doc.body ? doc.body.innerHTML : '');
   }
+  // PNG 는 흰 바탕 JPG 로 바꿔 올림 (투명한 배경이 내려받은 뒤 검게 보이는 것 방지)
+  function pmToJpg(f) {
+    if (!/^image\/png/i.test(f.type || '') && !/\.png$/i.test(f.name || '')) return Promise.resolve();
+    return new Promise(function (ok) {
+      var url = URL.createObjectURL(new Blob([f.data], { type: 'image/png' })), img = new Image();
+      var end = function () { URL.revokeObjectURL(url); ok(); };
+      img.onload = function () {
+        try {
+          var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0);
+          c.toBlob(function (bl) {
+            if (!bl) return end();
+            bl.arrayBuffer().then(function (ab) { f.data = new Uint8Array(ab); f.type = 'image/jpeg'; f.name = String(f.name || 'image').replace(/\.png$/i, '') + '.jpg'; end(); }, end);
+          }, 'image/jpeg', 0.92);
+        } catch (e) { end(); }
+      };
+      img.onerror = end; img.src = url;
+    });
+  }
   function pmSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
   function pmIsImg(f) { return /^image\/(png|jpe?g|gif|bmp|webp)/i.test(f.type || '') || /\.(png|jpe?g|gif|bmp|webp)$/i.test(f.name || ''); }
   function pmLoad() {
@@ -652,6 +671,8 @@
     if (file.size > 60 * 1048576) return say('pmMsg', '파일이 너무 큽니다 (60MB까지).');
     say('pmMsg', '메일 읽는 중…', true);
     pmLib().then(function () { return file.arrayBuffer(); }).then(function (buf) { return window.MailParse.parseMail(buf, file.name); }).then(function (m) {
+      return Promise.all(m.files.map(pmToJpg)).then(function () { return m; });
+    }).then(function (m) {
       var html = pmClean(m.html || '');
       if (!html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, '').trim() && !/<img/i.test(html) && m.text) html = '<pre style="white-space:pre-wrap;font:inherit">' + esc(m.text) + '</pre>';
       if (html.length > 3000000) html = '<pre style="white-space:pre-wrap;font:inherit">' + esc(m.text || '(본문이 너무 길어 글만 저장했습니다)') + '</pre>';
