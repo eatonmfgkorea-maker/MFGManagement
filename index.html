@@ -280,6 +280,30 @@
   @media (max-width:640px) { .pm.df { padding:18px 16px 20px; } .df-g, .df-dg { grid-template-columns:minmax(0,1fr); } .df-f { grid-template-columns:90px minmax(0,1fr); } .df-dt input[type=time] { width:auto; flex:1 1 0; } .df-dt { flex-wrap:nowrap; } .df-dt b { flex:none; } .df-th.big { width:calc(50% - 5px); height:auto; aspect-ratio:1; } }
   .df-ask { display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .df-ask b { font-size:15px; }
+  /* 생산계획 › 메일 */
+  .pmz { display:flex; align-items:center; gap:10px 16px; flex-wrap:wrap; border:1.5px dashed var(--ink); border-radius:2px; padding:14px 16px; margin-top:14px; }
+  .pmz.on { background:var(--ink); color:var(--bg); }
+  .pmz b { font-size:15px; }
+  .pmz span { flex:1; min-width:180px; font-size:13px; color:var(--muted); }
+  .pmz.on span { color:var(--bg); }
+  .pm .pmz-b { display:inline-flex; align-items:center; padding:0 18px; height:38px; font-size:14px; }
+  .pm-pend { display:flex; align-items:center; gap:10px; flex-wrap:wrap; border:2px solid var(--ink); padding:12px 14px; margin-top:10px; }
+  .pm-pend > div { flex:1; min-width:200px; display:flex; flex-direction:column; gap:2px; }
+  .pm-pend span { font-size:12px; color:var(--muted); }
+  .pm-pend .btn-p { padding:0 22px; height:40px; }
+  .pm table.at td.pm-sj { max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pm-h { font-size:20px !important; line-height:1.3; overflow-wrap:anywhere; }
+  .pm-meta { margin:8px 0 10px; }
+  .pm-body { width:100%; height:200px; border:1.5px solid var(--ink); border-radius:2px; background:#fff; display:block; }
+  .pm-sub { font-size:14px; font-weight:900; margin:18px 0 8px; display:flex; align-items:center; gap:8px; }
+  .pm-sub .btn-l { text-decoration:underline; }
+  .pm-fl { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:8px; }
+  .pm-f { display:flex; align-items:center; gap:10px; border:1.5px solid var(--ink); border-radius:2px; padding:6px; color:var(--ink); text-decoration:none; min-width:0; background:#F7F6F2; }
+  .pm-f:hover { background:var(--ink); color:var(--bg); }
+  .pm-f img, .pm-f i { width:52px; height:52px; flex:none; object-fit:cover; background:#fff; border:1px solid var(--num); display:flex; align-items:center; justify-content:center; font-style:normal; font-size:11px; font-weight:900; color:var(--ink); }
+  .pm-f span { min-width:0; display:flex; flex-direction:column; }
+  .pm-f b { font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pm-f small { font-size:11px; opacity:0.7; }
 </style>
 </head>
 <body>
@@ -547,6 +571,7 @@
   function paintPlan() {
     var body = $('plBody'); if (!body) return;
     document.querySelectorAll('#plSeg button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === planView); });
+    if (planView === 'mail') return pmPaint(body);
     if (!planData) { body.innerHTML = '<div class="pl-none">불러오는 중…</div>'; return; }
     var ds = planDates(), a = new Date(ds[0] + 'T00:00:00'), b = new Date(ds[ds.length - 1] + 'T00:00:00');
     $('plSub').textContent = planView === 'day' ? (a.getMonth() + 1) + '월 ' + a.getDate() + '일 ' + '일월화수목금토'[a.getDay()] + '요일' : (a.getMonth() + 1) + '/' + a.getDate() + ' ~ ' + (b.getMonth() + 1) + '/' + b.getDate() + ' (이번 주)';
@@ -554,17 +579,170 @@
   }
   function openPlan() {
     if (!me) { planAfterLogin = true; return openLogin(); }
-    var d = modal('<div class="pl-top"><h2>생산계획</h2><div class="seg" id="plSeg"><button type="button" data-v="day">오늘</button><button type="button" data-v="week">이번 주</button></div><span id="plSub" class="note"></span><button class="pl-x" id="plX" type="button" aria-label="닫기">✕</button></div><div id="plBody"></div>', true);
+    var d = modal('<div class="pl-top"><h2>생산계획</h2><div class="seg" id="plSeg"><button type="button" data-v="day">오늘</button><button type="button" data-v="week">이번 주</button><button type="button" data-v="mail">메일</button></div><span id="plSub" class="note"></span><button class="pl-x" id="plX" type="button" aria-label="닫기">✕</button></div><div id="plBody"></div>', true);
     d.querySelector('.pm').classList.add('plan');
     $('plX').onclick = closeModal;
-    document.querySelectorAll('#plSeg button').forEach(function (b) { b.onclick = function () { planView = b.getAttribute('data-v'); paintPlan(); }; });
-    paintPlan();
+    document.querySelectorAll('#plSeg button').forEach(function (b) { b.onclick = function () { planView = b.getAttribute('data-v'); pmCur = null; paintPlan(); }; });
+    pmCur = null; pmRows = null; pmPend = null; paintPlan();
     client.from('prod_state').select('key,updated_at,plan:data->plan,files:data->files,parsedAt:data->>parsedAt').eq('section', 'PLAN').then(function (r) {
       if (r.error) { var b = $('plBody'); if (b) b.innerHTML = '<div class="pl-none">계획을 불러오지 못했습니다: ' + esc(errText(r.error)) + '</div>'; return; }
       planData = planRows(r.data || []); paintPlan();
     });
   }
   var planAfterLogin = false;
+
+  // ----- 생산계획 › 메일: Outlook 메일 파일(.msg · .eml)을 올리면 본문·사진·첨부를 저장 — 로그인한 사람만 (표 plan_mails, 저장소 'planmail') -----
+  var pmRows = null, pmCur = null, pmPend = null, pmQ = '';
+  function pmLib() {   // 메일 파일 읽는 도구는 올릴 때만 불러옴
+    if (window.MailParse) return Promise.resolve();
+    return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = 'lib/mailparse.js?v=1'; s.onload = function () { window.MailParse ? ok() : no(new Error('메일 읽기 도구를 불러오지 못했습니다')); }; s.onerror = function () { no(new Error('메일 읽기 도구를 불러오지 못했습니다')); }; document.head.appendChild(s); });
+  }
+  function pmClean(html) {   // 스크립트·폼·외부 불러오기 제거
+    var doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    doc.querySelectorAll('script,iframe,object,embed,link,meta,base,form,input,button,textarea,select,noscript,title').forEach(function (e) { e.remove(); });
+    doc.querySelectorAll('*').forEach(function (e) {
+      [].slice.call(e.attributes).forEach(function (a) {
+        var n = a.name.toLowerCase(), v = String(a.value || '').replace(/\s+/g, '').toLowerCase();
+        if (n.indexOf('on') === 0 || n === 'srcdoc' || ((n === 'href' || n === 'src' || n === 'action' || n === 'xlink:href') && /^(javascript|vbscript|data:text\/html)/.test(v))) e.removeAttribute(a.name);
+      });
+    });
+    var st = [].slice.call(doc.querySelectorAll('style')).map(function (s) { return s.outerHTML; }).join('');
+    doc.querySelectorAll('body style').forEach(function (s) { s.remove(); });
+    return st + (doc.body ? doc.body.innerHTML : '');
+  }
+  function pmSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
+  function pmIsImg(f) { return /^image\/(png|jpe?g|gif|bmp|webp)/i.test(f.type || '') || /\.(png|jpe?g|gif|bmp|webp)$/i.test(f.name || ''); }
+  function pmLoad() {
+    return client.from('plan_mails').select('id,subject,sent_at,from_name,to_names,files,created_by,created_at').order('sent_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false }).limit(300).then(function (r) {
+      if (r.error) throw r.error; pmRows = r.data || [];
+    });
+  }
+  function pmErr(e) { var m = errText(e); return /plan_mails|planmail|relation|schema cache|bucket|permission denied/i.test(m) ? '서버 준비가 안 됐습니다 — SQL «261111_생산계획 메일»을 먼저 실행하세요. (' + m + ')' : m; }
+  function pmPaint(body) {
+    $('plSub').textContent = pmRows ? '메일 ' + pmRows.length + '건' : '';
+    if (pmCur) return pmPaintDet(body);
+    body.innerHTML = '<div class="pmz" id="pmZone"><b>메일 올리기</b><span>Outlook에서 메일을 여기로 끌어다 놓거나 파일(.msg · .eml)을 고르세요</span><label class="btn-p pmz-b">파일 고르기<input type="file" id="pmFile" accept=".msg,.eml" hidden></label></div><div id="pmMsg" class="msg"></div><div id="pmPend"></div>' +
+      '<div class="act-ctl"><input type="search" id="pmQ" placeholder="제목 · 보낸 사람 찾기" value="' + esc(pmQ) + '"></div><div id="pmTbl"><div class="pl-none">불러오는 중…</div></div>';
+    var z = $('pmZone');
+    z.ondragover = function (e) { e.preventDefault(); z.classList.add('on'); };
+    z.ondragleave = function () { z.classList.remove('on'); };
+    z.ondrop = function (e) {
+      e.preventDefault(); z.classList.remove('on');
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f) return say('pmMsg', 'Outlook에서 바로 끌어오기가 안 되는 화면입니다 — 메일을 바탕화면에 먼저 끌어다 놓은 뒤, 그 파일을 여기에 올려 주세요.');
+      pmRead(f);
+    };
+    $('pmFile').onchange = function () { var f = this.files && this.files[0]; this.value = ''; if (f) pmRead(f); };
+    $('pmQ').oninput = function () { pmQ = this.value; pmDraw(); };
+    pmPendPaint();
+    if (pmRows) pmDraw(); else pmLoad().then(function () { if ($('pmTbl')) { $('plSub').textContent = '메일 ' + pmRows.length + '건'; pmDraw(); } }).catch(function (e) { if ($('pmTbl')) $('pmTbl').innerHTML = '<div class="pl-none">' + esc(pmErr(e)) + '</div>'; });
+  }
+  function pmDraw() {
+    var el = $('pmTbl'); if (!el || !pmRows) return;
+    var q = pmQ.toLowerCase().replace(/\s+/g, '');
+    var rows = pmRows.filter(function (r) { return !q || [r.subject, r.from_name, r.to_names].join(' ').toLowerCase().replace(/\s+/g, '').indexOf(q) >= 0; });
+    el.innerHTML = rows.length ? '<div class="tbl-wrap"><table class="at df-t"><thead><tr><th class="l">보낸 날짜</th><th class="l">제목</th><th class="l">보낸 사람</th><th>사진</th><th>첨부</th></tr></thead><tbody>' +
+      rows.map(function (r) { var fs = r.files || [], im = fs.filter(pmIsImg).length; return '<tr data-id="' + r.id + '"><td class="l">' + esc(hm(r.sent_at || r.created_at)) + '</td><td class="l nm pm-sj">' + esc(r.subject || '(제목 없음)') + '</td><td class="l">' + esc(r.from_name || '') + '</td><td>' + (im || '') + '</td><td>' + ((fs.length - im) || '') + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' : '<div class="pl-none">' + (q ? '찾는 메일이 없습니다.' : '아직 올린 메일이 없습니다.') + '</div>';
+    el.querySelectorAll('tr[data-id]').forEach(function (tr) { tr.onclick = function () { pmOpen(+tr.getAttribute('data-id')); }; });
+  }
+  // ---------- 올리기 ----------
+  function pmRead(file) {
+    if (!/\.(msg|eml)$/i.test(file.name)) return say('pmMsg', '메일 파일(.msg · .eml)만 올릴 수 있습니다: ' + file.name);
+    if (file.size > 60 * 1048576) return say('pmMsg', '파일이 너무 큽니다 (60MB까지).');
+    say('pmMsg', '메일 읽는 중…', true);
+    pmLib().then(function () { return file.arrayBuffer(); }).then(function (buf) { return window.MailParse.parseMail(buf, file.name); }).then(function (m) {
+      var html = pmClean(m.html || '');
+      if (!html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, '').trim() && !/<img/i.test(html) && m.text) html = '<pre style="white-space:pre-wrap;font:inherit">' + esc(m.text) + '</pre>';
+      if (html.length > 3000000) html = '<pre style="white-space:pre-wrap;font:inherit">' + esc(m.text || '(본문이 너무 길어 글만 저장했습니다)') + '</pre>';
+      var big = m.files.filter(function (f) { return f.data.length > 25 * 1048576; });
+      pmPend = { m: m, html: html, src: file.name, files: m.files.filter(function (f) { return f.data.length <= 25 * 1048576; }), big: big.map(function (f) { return f.name; }) };
+      say('pmMsg', ''); pmPendPaint();
+    }).catch(function (e) { say('pmMsg', '메일을 읽지 못했습니다: ' + errText(e)); });
+  }
+  function pmPendPaint() {
+    var el = $('pmPend'); if (!el) return;
+    if (!pmPend) { el.innerHTML = ''; return; }
+    var m = pmPend.m, fs = pmPend.files, im = fs.filter(pmIsImg).length;
+    var dup = (pmRows || []).some(function (r) { return (r.subject || '') === (m.subject || '') && r.sent_at && m.date && new Date(r.sent_at).getTime() === new Date(m.date).getTime(); });
+    el.innerHTML = '<div class="pm-pend"><div><b>' + esc(m.subject || '(제목 없음)') + '</b><span>' + esc([m.from, hm(m.date), '사진 ' + im + '장', '첨부 ' + (fs.length - im) + '개'].filter(Boolean).join(' · ')) + '</span>' +
+      (pmPend.big.length ? '<span class="df-re">25MB가 넘어 빠지는 파일: ' + esc(pmPend.big.join(', ')) + '</span>' : '') + (dup ? '<span class="df-re">같은 제목 · 같은 시각의 메일이 이미 있습니다.</span>' : '') + '</div>' +
+      '<button class="btn-p" type="button" id="pmUp">' + (dup ? '그래도 올리기' : '올리기') + '</button><button class="btn-l" type="button" id="pmNo">취소</button></div>';
+    $('pmNo').onclick = function () { pmPend = null; pmPendPaint(); };
+    $('pmUp').onclick = pmUpload;
+  }
+  function pmUpload() {
+    var P = pmPend; if (!P) return; var m = P.m, st = client.storage.from('planmail');
+    var d = m.date ? new Date(m.date) : new Date(), dir = ymd(d).slice(0, 7) + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '/';
+    $('pmUp').disabled = true; var done = [], k = 0;
+    var up = P.files.reduce(function (p, f, i) {
+      return p.then(function () {
+        say('pmMsg', '올리는 중… ' + (++k) + '/' + P.files.length, true);
+        var ex = (/\.([A-Za-z0-9]{1,8})$/.exec(f.name) || [])[1] || 'bin', path = dir + (i + 1) + '.' + ex.toLowerCase();
+        return st.upload(path, new Blob([f.data], { type: f.type || 'application/octet-stream' }), { contentType: f.type || 'application/octet-stream', upsert: false }).then(function (r) {
+          if (r.error) throw r.error; done.push(path); f.path = path;
+        });
+      });
+    }, Promise.resolve());
+    up.then(function () {
+      say('pmMsg', '저장 중…', true);
+      var row = { subject: m.subject || '', sent_at: m.date || null, from_name: m.from || '', to_names: (m.to || []).join(', '), cc_names: (m.cc || []).join(', '), body_html: P.html, src_name: P.src,
+        files: P.files.map(function (f) { return { p: f.path, name: f.name, type: f.type, size: f.data.length, cid: f.cid || '', inline: !!f.inline }; }) };
+      return client.from('plan_mails').insert(row).select('id').then(function (r) { if (r.error) throw r.error; return r.data[0].id; });
+    }).then(function (id) {
+      pmPend = null; return pmLoad().then(function () { say('pmMsg', '올렸습니다', true); pmOpen(id); });
+    }).catch(function (e) {
+      if (done.length) st.remove(done);
+      if ($('pmUp')) $('pmUp').disabled = false; say('pmMsg', '올리지 못했습니다: ' + pmErr(e));
+    });
+  }
+  // ---------- 보기 ----------
+  function pmOpen(id) {
+    var b = $('plBody'); if (b) b.innerHTML = '<div class="pl-none">불러오는 중…</div>';
+    client.from('plan_mails').select('*').eq('id', id).then(function (r) {
+      if (r.error || !(r.data || []).length) throw r.error || new Error('메일을 찾지 못했습니다');
+      var row = r.data[0], ps = (row.files || []).map(function (f) { return f.p; });
+      return (ps.length ? client.storage.from('planmail').createSignedUrls(ps, 3600) : Promise.resolve({ data: [] })).then(function (x) {
+        var u = {}; ((x && x.data) || []).forEach(function (s, i) { if (s && s.signedUrl) u[ps[i]] = s.signedUrl; });
+        row._u = u; pmCur = row; if ($('plBody')) pmPaint($('plBody'));
+      });
+    }).catch(function (e) { pmCur = null; if ($('plBody')) { pmPaint($('plBody')); say('pmMsg', pmErr(e)); } });
+  }
+  function pmPaintDet(b) {
+    var r = pmCur, fs = r.files || [], u = r._u || {}, byCid = {};
+    fs.forEach(function (f) { if (f.cid && u[f.p]) byCid[f.cid] = u[f.p]; });
+    var dl = function (f) { return u[f.p] ? u[f.p] + '&download=' + encodeURIComponent(f.name || 'file') : ''; };
+    var imgs = fs.filter(pmIsImg), etc = fs.filter(function (f) { return !pmIsImg(f); });
+    var mine = me && (me.isAdmin || String(r.created_by || '').toLowerCase() === String(me.email || '').toLowerCase());
+    var fileRow = function (f) { return '<a class="pm-f" href="' + esc(dl(f)) + '" target="_blank" rel="noopener">' + (pmIsImg(f) && u[f.p] ? '<img src="' + esc(u[f.p]) + '" alt="">' : '<i>' + esc(((/\.([A-Za-z0-9]+)$/.exec(f.name) || [])[1] || '파일').toUpperCase()) + '</i>') + '<span><b>' + esc(f.name) + '</b><small>' + pmSize(f.size || 0) + ' · 내려받기</small></span></a>'; };
+    b.innerHTML = '<div class="df-det"><div class="df-dh"><b class="pm-h">' + esc(r.subject || '(제목 없음)') + '</b></div>' +
+      '<p class="act-note pm-meta">' + esc([r.from_name && '보낸 사람 ' + r.from_name, r.sent_at && hm(r.sent_at), r.to_names && '받는 사람 ' + r.to_names, r.cc_names && '참조 ' + r.cc_names].filter(Boolean).join('  ·  ')) + '</p>' +
+      '<iframe id="pmBody" class="pm-body" sandbox="allow-same-origin allow-popups" title="메일 본문"></iframe>' +
+      (imgs.length ? '<h3 class="pm-sub">사진 ' + imgs.length + '장' + (imgs.length > 1 ? '<button class="btn-l" type="button" id="pmAll">모두 내려받기</button>' : '') + '</h3><div class="pm-fl">' + imgs.map(fileRow).join('') + '</div>' : '') +
+      (etc.length ? '<h3 class="pm-sub">첨부 파일 ' + etc.length + '개</h3><div class="pm-fl">' + etc.map(fileRow).join('') + '</div>' : '') +
+      '<div class="df-btns"><button class="btn-p" type="button" id="pmlBack">목록으로</button>' + (mine ? '<button class="btn-l" type="button" id="pmDel">지우기</button>' : '') + '<div id="pmMsg" class="msg"></div></div>' +
+      '<p class="act-note">' + esc('올린 시각 ' + hm(r.created_at)) + '</p></div>';
+    var html = String(r.body_html || '').replace(/cid:([^"'\s>)]+)/gi, function (all, c) { return byCid[c] || byCid[decodeURIComponent(c)] || all; });
+    var fr = $('pmBody'), fit = function () { try { var d = fr.contentDocument; if (d && d.documentElement) fr.style.height = Math.max(120, d.documentElement.scrollHeight + 8) + 'px'; } catch (e) {} };
+    fr.onload = function () { fit(); try { [].slice.call(fr.contentDocument.images).forEach(function (im) { im.addEventListener('load', fit); im.addEventListener('error', fit); }); } catch (e) {} setTimeout(fit, 600); };
+    fr.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><style>html,body{margin:0;padding:0;background:#fff;color:#141414;font-family:"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5;overflow-wrap:anywhere}body{padding:14px}img{max-width:100%;height:auto}table{max-width:100%}</style></head><body>' + html + '</body></html>';
+    $('pmlBack').onclick = function () { pmCur = null; pmPaint($('plBody')); };
+    if ($('pmAll')) $('pmAll').onclick = function () {
+      imgs.forEach(function (f, i) { var h = dl(f); if (h) setTimeout(function () { var a = document.createElement('a'); a.href = h; a.download = f.name || ''; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); }, i * 500); });
+      say('pmMsg', '사진 ' + imgs.length + '장을 내려받는 중… (브라우저가 «여러 파일 다운로드»를 물으면 허용)', true);
+    };
+    var arm = false;
+    if ($('pmDel')) $('pmDel').onclick = function () {
+      var btn = this;
+      if (!arm) { arm = true; btn.textContent = '한 번 더 누르면 지웁니다'; setTimeout(function () { arm = false; if (btn.isConnected) btn.textContent = '지우기'; }, 3000); return; }
+      say('pmMsg', '지우는 중…', true);
+      client.from('plan_mails').delete().eq('id', r.id).select('id').then(function (x) {
+        if (x.error) throw x.error; if (!(x.data || []).length) throw new Error('지울 수 없습니다 (올린 사람·관리자만)');
+        var ps = fs.map(function (f) { return f.p; }).filter(Boolean); if (ps.length) client.storage.from('planmail').remove(ps);
+        pmCur = null; return pmLoad().then(function () { pmPaint($('plBody')); });
+      }).catch(function (e) { say('pmMsg', '지우지 못했습니다: ' + errText(e)); });
+    };
+  }
 
   // ----- 참여 현황: 조직도 MFG 인원별 SIO · 제안서 · E-Star(보낸 건수), 해당 연도 — 누구나 -----
   var ACT_GAS = 'https://script.google.com/macros/s/AKfycbzfrFhBARsEkBD5YCSYJodYCrG-FXEw63Slw6rDZlzkfZaKeHCAZD_Y6jZQmbRqB4OVOQ/exec';   // SIO·제안서 시트 이름별 건수 (시트 주인 계정의 Apps Script 웹앱)
