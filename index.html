@@ -1369,7 +1369,7 @@
   var dfForm = { line: '' };
   function dfPaintPh() {
     var el = $('dfPh'); if (!el) return;
-    el.innerHTML = dfFiles.map(function (f, i) { return '<div class="df-it"><div class="df-th"><img src="' + esc(f.url || '') + '" alt=""><button type="button" data-rm="' + i + '" aria-label="사진 빼기">✕</button><button type="button" class="mk" data-mk="' + i + '">표시</button></div><input type="text" data-cap="' + i + '" value="' + esc(f.c || '') + '" placeholder="사진 설명" maxlength="80" autocomplete="off"></div>'; }).join('') +
+    el.innerHTML = dfFiles.map(function (f, i) { return '<div class="df-it"><div class="df-th"><img src="' + esc(f.url || '') + '" alt=""><button type="button" data-rm="' + i + '" aria-label="사진 빼기">✕</button><button type="button" class="mk" data-mk="' + i + '">표시</button></div><input type="text" data-cap="' + i + '" value="' + esc(f.c || '') + '" placeholder="사진 설명 (사진 아래에 새겨짐)" maxlength="80" autocomplete="off"></div>'; }).join('') +
       '<label class="df-add">＋ 사진<input type="file" id="dfFile" accept="image/*" multiple hidden></label>';
     el.querySelectorAll('[data-rm]').forEach(function (x) { x.onclick = function () { dfFiles.splice(+x.getAttribute('data-rm'), 1); dfPaintPh(); }; });
     el.querySelectorAll('[data-cap]').forEach(function (x) { x.oninput = function () { var f = dfFiles[+x.getAttribute('data-cap')]; if (f) f.c = x.value; }; });
@@ -1403,13 +1403,38 @@
       x.stroke();
     });
   }
+  function dfImg(bl) { return new Promise(function (ok, no) { var im = new Image(), u = URL.createObjectURL(bl); im.onload = function () { ok({ im: im, u: u }); }; im.onerror = function () { URL.revokeObjectURL(u); no(new Error('사진을 열지 못했습니다')); }; im.src = u; }); }
+  // 원본(표시·설명 넣기 전 사진). 이미 올린 사진은 받아서, 전에 새긴 설명 띠(ch)를 잘라 낸 것
+  function dfBase(f) {
+    if (f.base) return Promise.resolve(f.base);
+    return fetch(f.url).then(function (r) { if (!r.ok) throw new Error('사진을 불러오지 못했습니다'); return r.blob(); }).then(function (bl) {
+      if (!f.ch) { f.base = bl; f.shapes = []; return bl; }
+      return dfImg(bl).then(function (o) {
+        var W = o.im.naturalWidth, H = Math.max(1, o.im.naturalHeight - f.ch), c = document.createElement('canvas'); c.width = W; c.height = H;
+        c.getContext('2d').drawImage(o.im, 0, 0); URL.revokeObjectURL(o.u);
+        return new Promise(function (ok, no) { c.toBlob(function (b2) { if (!b2) return no(new Error('사진을 열지 못했습니다')); f.base = b2; f.shapes = []; ok(b2); }, 'image/jpeg', 0.92); });
+      });
+    });
+  }
+  // 올릴 사진 한 장 만들기: 원본 + 빨간 표시 + 아래 흰 띠에 설명 글
+  function dfCompose(f) {
+    return dfBase(f).then(dfImg).then(function (o) {
+      var im = o.im, W = im.naturalWidth, H = im.naturalHeight, cap = String(f.c || '').trim(), sh = f.shapes || [];
+      if (!cap && !sh.length) { URL.revokeObjectURL(o.u); return { blob: f.base, w: W, h: H, ch: 0 }; }
+      var cv = document.createElement('canvas'), x = cv.getContext('2d'), fs = Math.max(20, Math.round(W / 30)), pad = Math.round(fs * 0.7), lines = [], font = '700 ' + fs + 'px "Gothic A1","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+      if (cap) { x.font = font; var line = ''; cap.split('').forEach(function (ch) { if (line && x.measureText(line + ch).width > W - pad * 2) { var sp = line.lastIndexOf(' '); if (ch !== ' ' && sp > line.length * 0.5) { lines.push(line.slice(0, sp)); line = line.slice(sp + 1) + ch; } else { lines.push(line); line = ch === ' ' ? '' : ch; } } else line += ch; }); if (line) lines.push(line); }
+      var chh = cap ? Math.round(lines.length * fs * 1.4 + pad * 1.3) : 0;
+      cv.width = W; cv.height = H + chh; x.fillStyle = '#fff'; x.fillRect(0, 0, W, H + chh); x.drawImage(im, 0, 0);
+      dfDrawShapes(x, sh, Math.max(4, Math.round(Math.max(W, H) / 150)));
+      if (cap) { x.fillStyle = '#141414'; x.fillRect(0, H, W, Math.max(2, Math.round(fs / 10))); x.font = font; x.textBaseline = 'top'; lines.forEach(function (t, i) { x.fillText(t, pad, H + pad * 0.75 + i * fs * 1.4); }); }
+      URL.revokeObjectURL(o.u);
+      return new Promise(function (ok, no) { cv.toBlob(function (bl) { bl ? ok({ blob: bl, w: W, h: H + chh, ch: chh }) : no(new Error('사진을 만들지 못했습니다')); }, 'image/jpeg', 0.86); });
+    });
+  }
   function dfMark(i) {
     var f = dfFiles[i]; if (!f) return;
-    var getBase = f.base ? Promise.resolve(f.base) : fetch(f.url).then(function (r) { if (!r.ok) throw new Error('사진을 불러오지 못했습니다'); return r.blob(); }).then(function (bl) { f.base = bl; f.shapes = []; return bl; });
     say('dfMsg', '사진 여는 중…', true);
-    getBase.then(function (bl) {
-      return new Promise(function (ok, no) { var im = new Image(), u = URL.createObjectURL(bl); im.onload = function () { ok({ im: im, u: u }); }; im.onerror = function () { URL.revokeObjectURL(u); no(new Error('사진을 열지 못했습니다')); }; im.src = u; });
-    }).then(function (o) {
+    dfBase(f).then(dfImg).then(function (o) {
       say('dfMsg', '');
       var im = o.im, W = im.naturalWidth, H = im.naturalHeight, lw = Math.max(4, Math.round(Math.max(W, H) / 150));
       var shapes = (f.shapes || []).map(function (q) { return { t: q.t, x: q.x, y: q.y, w: q.w, h: q.h }; }), tool = 'r', cur = null;
@@ -1438,7 +1463,7 @@
         cur = null; draw();
         c.toBlob(function (bl) {
           if (!bl) { close(); return say('dfMsg', '표시를 저장하지 못했습니다'); }
-          f.shapes = shapes; f.blob = shapes.length ? bl : f.base; f.url = URL.createObjectURL(f.blob);
+          f.shapes = shapes; f.dirty = true; f.blob = shapes.length ? bl : f.base; f.url = URL.createObjectURL(f.blob);
           close(); dfPaintPh();
         }, 'image/jpeg', 0.86);
       };
@@ -1461,16 +1486,27 @@
       return;
     }
     btn.disabled = true; say('dfMsg', dfEdit ? '저장 중…' : '발송 중…', true);
-    var st = client.storage.from('defect'), k = 0, news = dfFiles.filter(function (f) { return f.blob; });
-    var up = news.reduce(function (p, f) {
+    var st = client.storage.from('defect'), k = 0, news = [];
+    // 새 사진, 표시를 고친 사진, 설명을 고친 사진은 «원본 + 표시 + 설명 띠» 한 장으로 다시 만들어 올림
+    var prep = dfFiles.reduce(function (p, f) {
       return p.then(function () {
-        say('dfMsg', '사진 올리는 중… ' + (++k) + '/' + news.length, true);
-        var path = row.d.slice(0, 7) + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
-        return st.upload(path, f.blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) { if (r.error) throw r.error; f.path = path; delete f.blob; });
+        if (!(f.blob || f.dirty || (f.path && String(f.c || '').trim() !== String(f.c0 || '')))) return;
+        say('dfMsg', '사진 준비 중…', true);
+        return dfCompose(f).then(function (o) { f.blob = o.blob; f.w = o.w; f.h = o.h; f.ch = o.ch; });
       });
     }, Promise.resolve());
+    var up = prep.then(function () {
+      news = dfFiles.filter(function (f) { return f.blob; });
+      return news.reduce(function (p, f) {
+        return p.then(function () {
+          say('dfMsg', '사진 올리는 중… ' + (++k) + '/' + news.length, true);
+          var path = row.d.slice(0, 7) + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+          return st.upload(path, f.blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) { if (r.error) throw r.error; f.path = path; delete f.blob; f.dirty = false; f.c0 = String(f.c || '').trim(); });
+        });
+      }, Promise.resolve());
+    });
     up.then(function () {
-      row.photos = dfFiles.map(function (f) { var o = { p: f.path, w: f.w, h: f.h }, c = String(f.c || '').trim(); if (c) o.c = c; return o; });
+      row.photos = dfFiles.map(function (f) { var o = { p: f.path, w: f.w, h: f.h }, c = String(f.c || '').trim(); if (c) o.c = c; if (c && f.ch) o.ch = f.ch; return o; });
       row.updated_at = new Date().toISOString();
       var q = dfEdit ? client.from('defect_notices').update(row).eq('id', dfEdit.id).select() : client.from('defect_notices').insert(row).select();
       return q.then(function (r) {
@@ -1545,7 +1581,7 @@
     b.innerHTML = '<div class="df-det"><div class="df-dh"><b>' + esc(dfDay(r.d)) + ' · ' + (r.kind ? esc(r.kind) + ' · ' : '') + esc(r.line) + ' ' + esc(r.proc || '') + '</b>' + (r.recur === '재발' ? '<em class="df-re">재발</em>' : '<em>최초</em>') + '</div>' +
       '<div class="df-dg">' + f('유형', esc(r.kind || '-')) + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
       f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
-      (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<div class="df-pvi"><a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>' + (p.c ? '<p>' + esc(p.c) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '') +
+      (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<div class="df-pvi"><a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>' + (p.c && !p.ch ? '<p>' + esc(p.c) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '') +
       '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">텍스트 복사</button>' + (dfMobile() ? '<button class="btn-p" type="button" id="dfShareB">공유</button>' : '') + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">다시 발송</button><button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc((r.created_at ? '작성 ' + hm(r.created_at) : '') + (r.updated_at && r.created_at && r.updated_at.slice(0, 16) !== r.created_at.slice(0, 16) ? ' · 고침 ' + hm(r.updated_at) : '')) + '</p></div>';
     if (ph.length) client.storage.from('defect').createSignedUrls(ph.map(function (p) { return p.p; }), 3600).then(function (x) {
@@ -1559,7 +1595,7 @@
     if ($('dfShareB')) $('dfShareB').onclick = function () { dfShare(r); };
     if ($('dfEditB')) $('dfEditB').onclick = function () {
       dfEdit = r; dfRec = r.recur; dfKind = r.kind || ''; dfForm.line = r.line;
-      dfFiles = (r.photos || []).map(function (p) { return { path: p.p, w: p.w, h: p.h, c: p.c || '', url: dfUrls[p.p] || '' }; });
+      dfFiles = (r.photos || []).map(function (p) { return { path: p.p, w: p.w, h: p.h, c: p.c || '', c0: p.c || '', ch: p.ch || 0, url: dfUrls[p.p] || '' }; });
       dfView = 'new'; dfPaint();
     };
     var arm = false;
