@@ -269,6 +269,8 @@
   .df-ed-bar > button { height:40px; padding:0 16px; border:1.5px solid var(--ink); border-radius:2px; background:var(--bg); color:var(--ink); font-size:14px; font-weight:700; cursor:pointer; }
   .df-ed-bar > #dfEdOk { background:var(--ink); color:var(--bg); padding:0 26px; }
   .df-ed-bar span { font-size:12.5px; color:var(--muted); flex-basis:100%; text-align:center; }
+  .df-test { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; cursor:pointer; }
+  .df-test input { width:16px; height:16px; margin:0; }
   .df-add { width:96px; height:96px; border:1.5px dashed var(--ink); border-radius:2px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; cursor:pointer; }
   .df-add:hover { background:var(--ink); color:var(--bg); }
   .df-btns { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; }
@@ -1287,18 +1289,29 @@
     return a;
   }
   // 메일: Apps Script 웹앱에 {공지 번호, 로그인 토큰} 만 보냄 → 웹앱이 서버에서 공지를 읽어 정해진 주소로 보냄
-  function dfMail(id, resend) {
+  function dfMail(id, resend, test) {
     var url = dfLists && dfLists.mailUrl;
     if (!url) return Promise.resolve({ ok: false, none: true, error: '메일 보낼 웹앱 주소가 아직 없습니다 (관리자 «선택 목록 고치기»)' });
     return client.auth.getSession().then(function (s) {
       var tk = s && s.data && s.data.session && s.data.session.access_token; if (!tk) throw new Error('로그인 정보가 없습니다');
-      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ id: id, token: tk, resend: !!resend }) }).then(function (r) { return r.json(); });
+      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(test ? { id: id, token: tk, resend: true, test: true } : { id: id, token: tk, resend: !!resend }) }).then(function (r) { return r.json(); });
     });
   }
-  function dfMailSay(p) {
-    say('dfMsg', '발송 중…', true);
+  // 테스트 발송을 아는 스크립트인지 먼저 확인 — 옛 스크립트는 test 를 몰라서 수신자에게 그대로 보내 버림
+  function dfMailCan() {
+    var url = dfLists && dfLists.mailUrl;
+    if (!url) return Promise.reject(new Error('메일 보낼 웹앱 주소가 아직 없습니다'));
+    return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !(j.v >= 2)) throw new Error('메일 스크립트가 옛 버전이라 테스트 발송을 할 수 없습니다 — 새 Code.gs 를 붙여넣고 새 버전으로 배포하세요');
+      return j;
+    });
+  }
+  function dfMailSay(p, test) {
+    say('dfMsg', test ? '테스트 발송 중…' : '발송 중…', true);
     p.then(function (x) {
-      if (x && x.ok) say('dfMsg', '발송되었습니다', true);
+      if (x && x.ok && test && !x.test) say('dfMsg', '메일 스크립트가 옛 버전입니다 — 수신자에게 그대로 발송됐을 수 있습니다');
+      else if (x && x.ok && test) say('dfMsg', '테스트 메일을 보냈습니다 → ' + (x.to || '') + ' (수신자에게는 안 감)', true);
+      else if (x && x.ok) say('dfMsg', '발송되었습니다', true);
       else say('dfMsg', '공지는 저장됐지만 메일을 발송하지 못했습니다 — «다시 발송»을 눌러 주세요. (' + ((x && x.error) || '알 수 없는 오류') + ')');
     }).catch(function (e) { say('dfMsg', '공지는 저장됐지만 메일을 발송하지 못했습니다 — «다시 발송»을 눌러 주세요. (' + errText(e) + ')'); });
   }
@@ -1345,7 +1358,7 @@
       '<label class="w2">기타<textarea id="dfEtc" rows="2">' + esc(E.etc || '') + '</textarea></label>' +
       '<div><span class="lb">재발 유무</span><div class="seg" id="dfRec"><button type="button" data-v="최초">최초</button><button type="button" data-v="재발">재발</button></div></div>' +
       '<div class="w2"><span class="lb">첨부파일 <small>사진</small></span><div class="df-ph" id="dfPh"></div></div>' +
-      '</div><div class="df-btns"><button class="btn-p" type="submit" id="dfSave">' + (dfEdit ? '고친 내용 저장' : '발송') + '</button>' + (dfEdit ? '<button class="btn-l" type="button" id="dfCancel">취소</button>' : '') + '<div id="dfMsg" class="msg"></div>' +
+      '</div><div class="df-btns"><button class="btn-p" type="submit" id="dfSave">' + (dfEdit ? '고친 내용 저장' : '발송') + '</button>' + (!dfEdit && me.isAdmin ? '<label class="df-test"><input type="checkbox" id="dfTest"> 테스트 (수신자에게 안 감)</label>' : '') + (dfEdit ? '<button class="btn-l" type="button" id="dfCancel">취소</button>' : '') + '<div id="dfMsg" class="msg"></div>' +
       (me.isAdmin ? '<button class="btn-l df-lists" type="button" id="dfLists">선택 목록 고치기</button>' : '') + '</div></form>';
     var line = E.line || (dfForm.line) || '', setLine = function (v, keepProc) {
       line = v; dfForm.line = v;
@@ -1477,16 +1490,20 @@
     var row = { d: v('dfD'), reporter: v('dfRep'), kind: dfKind.join(',') || null, line: line, proc: v('dfProc') || null, product: v('dfProd') || null, dt_start: v('dfS'), dt_end: v('dfE') || null, problem: v('dfProb'), action: v('dfAct') || null, etc: v('dfEtc') || null, recur: dfRec };
     var miss = [!row.d && '날짜', !row.reporter && '보고자', !row.kind && '유형', !row.line && '라인', !row.proc && '공정', !row.dt_start && 'Down Time 시작', !row.problem && '문제점'].filter(Boolean);
     if (miss.length) return say('dfMsg', miss.join(' · ') + ' 을(를) 넣어 주세요.');
-    var btn = $('dfSave');
+    var btn = $('dfSave'), test = !dfEdit && !!($('dfTest') && $('dfTest').checked);
     if (!dfEdit && !ok) {   // 발송 전에 한 번 묻기
       say('dfMsg', ''); btn.hidden = true;
       var ask = document.createElement('span'); ask.className = 'df-ask'; ask.id = 'dfAsk';
-      ask.innerHTML = '<b>메일을 발송하시겠습니까?</b><button class="btn-p" type="button" id="dfYes">예</button><button class="btn-l" type="button" id="dfNo">아니요</button>';
+      ask.innerHTML = '<b>' + (test ? '테스트 메일만 발송할까요? (내 Gmail 로만)' : '메일을 발송하시겠습니까?') + '</b><button class="btn-p" type="button" id="dfYes">예</button><button class="btn-l" type="button" id="dfNo">아니요</button>';
       btn.parentNode.insertBefore(ask, btn);
       $('dfNo').onclick = function () { ask.remove(); btn.hidden = false; };
       $('dfYes').onclick = function () { ask.remove(); btn.hidden = false; dfSave(line, true); };
       $('dfYes').focus();
       return;
+    }
+    if (test && ok !== 'can') {   // 저장하기 전에 스크립트가 테스트 발송을 아는지 확인
+      say('dfMsg', '메일 스크립트 확인 중…', true);
+      return dfMailCan().then(function () { dfSave(line, 'can'); }).catch(function (e) { say('dfMsg', errText(e)); });
     }
     btn.disabled = true; say('dfMsg', dfEdit ? '저장 중…' : '발송 중…', true);
     var st = client.storage.from('defect'), k = 0, news = [];
@@ -1521,7 +1538,7 @@
           if (gone.length) st.remove(gone);
         }
         var wasNew = !dfEdit; dfEdit = null; dfFiles = [];
-        return dfLoad(true).then(function () { dfCur = saved && dfRows.filter(function (x) { return x.id === saved.id; })[0] || saved; dfView = 'det'; dfPaint(); if (wasNew && saved) dfMailSay(dfMail(saved.id)); });
+        return dfLoad(true).then(function () { dfCur = saved && dfRows.filter(function (x) { return x.id === saved.id; })[0] || saved; dfView = 'det'; dfPaint(); if (wasNew && saved) dfMailSay(dfMail(saved.id, false, test), test); });
       });
     }).catch(function (e) {
       btn.disabled = false; var m = errText(e);
@@ -1590,7 +1607,7 @@
       '<div class="df-dg">' + f('유형', esc(dfKL(r.kind) || '-')) + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
       f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
       (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<div class="df-pvi"><a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>' + (p.c && !p.ch ? '<p>' + esc(p.c) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '') +
-      '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">텍스트 복사</button>' + (dfMobile() ? '<button class="btn-p" type="button" id="dfShareB">공유</button>' : '') + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">다시 발송</button><button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
+      '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">텍스트 복사</button>' + (dfMobile() ? '<button class="btn-p" type="button" id="dfShareB">공유</button>' : '') + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">다시 발송</button>' + (me.isAdmin ? '<button class="btn-l" type="button" id="dfTestB">테스트 발송</button>' : '') + '<button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc((r.created_at ? '작성 ' + hm(r.created_at) : '') + (r.updated_at && r.created_at && r.updated_at.slice(0, 16) !== r.created_at.slice(0, 16) ? ' · 고침 ' + hm(r.updated_at) : '')) + '</p></div>';
     if (ph.length) client.storage.from('defect').createSignedUrls(ph.map(function (p) { return p.p; }), 3600).then(function (x) {
       var L = (x && x.data) || [];
@@ -1599,6 +1616,7 @@
     });
     $('dfBack').onclick = function () { dfView = 'list'; dfPaint(); };
     if ($('dfMailB')) $('dfMailB').onclick = function () { dfMailSay(dfMail(r.id, true)); };
+    if ($('dfTestB')) $('dfTestB').onclick = function () { say('dfMsg', '메일 스크립트 확인 중…', true); dfMailCan().then(function () { dfMailSay(dfMail(r.id, true, true), true); }).catch(function (e) { say('dfMsg', errText(e)); }); };
     $('dfCopy').onclick = function () { var t = dfText(r); dfCopyText(t).then(function (ok) { if (ok) say('dfMsg', '복사했습니다', true); else window.prompt('복사하세요', t); }); };
     if ($('dfShareB')) $('dfShareB').onclick = function () { dfShare(r); };
     if ($('dfEditB')) $('dfEditB').onclick = function () {
