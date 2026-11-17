@@ -255,6 +255,20 @@
   .df-th { position:relative; width:96px; height:96px; border:1.5px solid var(--ink); border-radius:2px; overflow:hidden; background:#F7F6F2; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted); }
   .df-th img { width:100%; height:100%; object-fit:cover; display:block; }
   .df-th button { position:absolute; top:3px; right:3px; width:24px; height:24px; border:0; border-radius:2px; background:var(--ink); color:var(--bg); font-size:12px; cursor:pointer; }
+  .df-it { width:150px; display:flex; flex-direction:column; gap:5px; }
+  .df-it .df-th { width:150px; height:112px; }
+  .df-it input { width:100%; min-width:0; height:34px; border:1.5px solid var(--ink); border-radius:2px; padding:0 7px; font-size:13px; background:#fff; }
+  .df-th button.mk { top:auto; right:auto; left:3px; bottom:3px; width:auto; padding:0 9px; background:#D63A0E; color:#fff; font-weight:700; }
+  .df-pvi { width:180px; }
+  .df-pvi p { margin:5px 0 0; font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
+  .df-ed { position:fixed; inset:0; z-index:300; background:rgba(20,20,20,0.94); display:flex; flex-direction:column; }
+  .df-ed-st { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:10px; overflow:hidden; }
+  .df-ed-st canvas { max-width:100%; max-height:100%; background:#fff; touch-action:none; cursor:crosshair; }
+  .df-ed-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center; padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background:var(--bg); border-top:2px solid var(--ink); }
+  .df-ed-bar .seg button { min-width:64px; }
+  .df-ed-bar > button { height:40px; padding:0 16px; border:1.5px solid var(--ink); border-radius:2px; background:var(--bg); color:var(--ink); font-size:14px; font-weight:700; cursor:pointer; }
+  .df-ed-bar > #dfEdOk { background:var(--ink); color:var(--bg); padding:0 26px; }
+  .df-ed-bar span { font-size:12.5px; color:var(--muted); flex-basis:100%; text-align:center; }
   .df-add { width:96px; height:96px; border:1.5px dashed var(--ink); border-radius:2px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; cursor:pointer; }
   .df-add:hover { background:var(--ink); color:var(--bg); }
   .df-btns { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; }
@@ -277,7 +291,7 @@
   .df-f.pre > div { white-space:pre-wrap; line-height:1.6; }
   .df-pv { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
   .df-th.big { width:180px; height:180px; }
-  @media (max-width:640px) { .pm.df { padding:18px 16px 20px; } .df-g, .df-dg { grid-template-columns:minmax(0,1fr); } .df-f { grid-template-columns:90px minmax(0,1fr); } .df-dt input[type=time] { width:auto; flex:1 1 0; } .df-dt { flex-wrap:nowrap; } .df-dt b { flex:none; } .df-th.big { width:calc(50% - 5px); height:auto; aspect-ratio:1; } }
+  @media (max-width:640px) { .pm.df { padding:18px 16px 20px; } .df-g, .df-dg { grid-template-columns:minmax(0,1fr); } .df-f { grid-template-columns:90px minmax(0,1fr); } .df-dt input[type=time] { width:auto; flex:1 1 0; } .df-dt { flex-wrap:nowrap; } .df-dt b { flex:none; } .df-th.big { width:100%; height:auto; aspect-ratio:1; } .df-pvi { width:calc(50% - 5px); } .df-it { width:calc(50% - 5px); } .df-it .df-th { width:100%; height:auto; aspect-ratio:4/3; } }
   .df-ask { display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .df-ask b { font-size:15px; }
   /* 생산계획 › 메일 */
@@ -1355,9 +1369,11 @@
   var dfForm = { line: '' };
   function dfPaintPh() {
     var el = $('dfPh'); if (!el) return;
-    el.innerHTML = dfFiles.map(function (f, i) { return '<div class="df-th"><img src="' + esc(f.url || '') + '" alt=""><button type="button" data-rm="' + i + '" aria-label="사진 빼기">✕</button></div>'; }).join('') +
+    el.innerHTML = dfFiles.map(function (f, i) { return '<div class="df-it"><div class="df-th"><img src="' + esc(f.url || '') + '" alt=""><button type="button" data-rm="' + i + '" aria-label="사진 빼기">✕</button><button type="button" class="mk" data-mk="' + i + '">표시</button></div><input type="text" data-cap="' + i + '" value="' + esc(f.c || '') + '" placeholder="사진 설명" maxlength="80" autocomplete="off"></div>'; }).join('') +
       '<label class="df-add">＋ 사진<input type="file" id="dfFile" accept="image/*" multiple hidden></label>';
     el.querySelectorAll('[data-rm]').forEach(function (x) { x.onclick = function () { dfFiles.splice(+x.getAttribute('data-rm'), 1); dfPaintPh(); }; });
+    el.querySelectorAll('[data-cap]').forEach(function (x) { x.oninput = function () { var f = dfFiles[+x.getAttribute('data-cap')]; if (f) f.c = x.value; }; });
+    el.querySelectorAll('[data-mk]').forEach(function (x) { x.onclick = function () { dfMark(+x.getAttribute('data-mk')); }; });
     $('dfFile').onchange = function () {
       var fs = [].slice.call(this.files || []); this.value = ''; if (!fs.length) return;
       say('dfMsg', '사진 줄이는 중…', true);
@@ -1372,11 +1388,61 @@
         var s = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
         c.width = Math.max(1, Math.round(img.naturalWidth * s)); c.height = Math.max(1, Math.round(img.naturalHeight * s));
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
-        c.toBlob(function (bl) { bl ? ok({ blob: bl, w: c.width, h: c.height, url: URL.createObjectURL(bl) }) : no(new Error('사진을 바꾸지 못했습니다')); }, 'image/jpeg', 0.82);
+        c.toBlob(function (bl) { bl ? ok({ blob: bl, base: bl, shapes: [], w: c.width, h: c.height, url: URL.createObjectURL(bl) }) : no(new Error('사진을 바꾸지 못했습니다')); }, 'image/jpeg', 0.82);
       };
       img.onerror = function () { URL.revokeObjectURL(u); no(new Error('사진을 읽지 못했습니다: ' + file.name)); };
       img.src = u;
     });
+  }
+  // 사진에 빨간 네모·원 표시 — 끌어서 그리고, «완료»하면 표시가 사진에 들어간 채로 올라감
+  function dfDrawShapes(x, shapes, lw) {
+    x.strokeStyle = '#E8140C'; x.lineWidth = lw; x.lineJoin = 'round';
+    shapes.forEach(function (q) {
+      x.beginPath();
+      if (q.t === 'o') x.ellipse(q.x + q.w / 2, q.y + q.h / 2, Math.abs(q.w / 2), Math.abs(q.h / 2), 0, 0, Math.PI * 2); else x.rect(q.x, q.y, q.w, q.h);
+      x.stroke();
+    });
+  }
+  function dfMark(i) {
+    var f = dfFiles[i]; if (!f) return;
+    var getBase = f.base ? Promise.resolve(f.base) : fetch(f.url).then(function (r) { if (!r.ok) throw new Error('사진을 불러오지 못했습니다'); return r.blob(); }).then(function (bl) { f.base = bl; f.shapes = []; return bl; });
+    say('dfMsg', '사진 여는 중…', true);
+    getBase.then(function (bl) {
+      return new Promise(function (ok, no) { var im = new Image(), u = URL.createObjectURL(bl); im.onload = function () { ok({ im: im, u: u }); }; im.onerror = function () { URL.revokeObjectURL(u); no(new Error('사진을 열지 못했습니다')); }; im.src = u; });
+    }).then(function (o) {
+      say('dfMsg', '');
+      var im = o.im, W = im.naturalWidth, H = im.naturalHeight, lw = Math.max(4, Math.round(Math.max(W, H) / 150));
+      var shapes = (f.shapes || []).map(function (q) { return { t: q.t, x: q.x, y: q.y, w: q.w, h: q.h }; }), tool = 'r', cur = null;
+      var d = document.createElement('div'); d.className = 'df-ed'; d.id = 'dfEd';
+      d.innerHTML = '<div class="df-ed-st"><canvas id="dfEdC" width="' + W + '" height="' + H + '"></canvas></div><div class="df-ed-bar"><span>사진 위를 끌어서 표시하세요</span><div class="seg" id="dfEdT"><button type="button" data-v="r" class="on">네모</button><button type="button" data-v="o">원</button></div>' +
+        '<button class="btn-l" type="button" id="dfEdU">되돌리기</button><button class="btn-l" type="button" id="dfEdR">모두 지우기</button><button class="btn-l" type="button" id="dfEdX">취소</button><button class="btn-p" type="button" id="dfEdOk">완료</button></div>';
+      document.body.appendChild(d);
+      var c = $('dfEdC'), x = c.getContext('2d');
+      var draw = function () { x.drawImage(im, 0, 0, W, H); dfDrawShapes(x, cur ? shapes.concat([cur]) : shapes, lw); };
+      var pos = function (e) { var r = c.getBoundingClientRect(); return [Math.max(0, Math.min(W, (e.clientX - r.left) * W / r.width)), Math.max(0, Math.min(H, (e.clientY - r.top) * H / r.height))]; };
+      var close = function () { URL.revokeObjectURL(o.u); d.remove(); };
+      draw();
+      c.onpointerdown = function (e) { e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch (er) {} var p = pos(e); cur = { t: tool, x: p[0], y: p[1], w: 0, h: 0 }; };
+      c.onpointermove = function (e) { if (!cur) return; var p = pos(e); cur.w = p[0] - cur.x; cur.h = p[1] - cur.y; draw(); };
+      c.onpointerup = c.onpointercancel = function () {
+        if (!cur) return; var q = cur; cur = null;
+        if (q.w < 0) { q.x += q.w; q.w = -q.w; } if (q.h < 0) { q.y += q.h; q.h = -q.h; }
+        if (q.w > lw * 2 && q.h > lw * 2) shapes.push(q); draw();
+      };
+      d.querySelectorAll('#dfEdT button').forEach(function (b) { b.onclick = function () { tool = b.getAttribute('data-v'); d.querySelectorAll('#dfEdT button').forEach(function (z) { z.classList.toggle('on', z === b); }); }; });
+      $('dfEdU').onclick = function () { shapes.pop(); draw(); };
+      $('dfEdR').onclick = function () { shapes = []; draw(); };
+      $('dfEdX').onclick = close;
+      $('dfEdOk').onclick = function () {
+        if (!shapes.length && !(f.shapes || []).length) return close();
+        cur = null; draw();
+        c.toBlob(function (bl) {
+          if (!bl) { close(); return say('dfMsg', '표시를 저장하지 못했습니다'); }
+          f.shapes = shapes; f.blob = shapes.length ? bl : f.base; f.url = URL.createObjectURL(f.blob);
+          close(); dfPaintPh();
+        }, 'image/jpeg', 0.86);
+      };
+    }).catch(function (e) { say('dfMsg', errText(e)); });
   }
   function dfSave(line, ok) {
     var v = function (id) { var e = $(id); return e ? String(e.value || '').trim() : ''; };
@@ -1404,7 +1470,7 @@
       });
     }, Promise.resolve());
     up.then(function () {
-      row.photos = dfFiles.map(function (f) { return { p: f.path, w: f.w, h: f.h }; });
+      row.photos = dfFiles.map(function (f) { var o = { p: f.path, w: f.w, h: f.h }, c = String(f.c || '').trim(); if (c) o.c = c; return o; });
       row.updated_at = new Date().toISOString();
       var q = dfEdit ? client.from('defect_notices').update(row).eq('id', dfEdit.id).select() : client.from('defect_notices').insert(row).select();
       return q.then(function (r) {
@@ -1446,7 +1512,8 @@
       .concat(['■ 보고자: ' + r.reporter, '■ 제품명: ' + (r.product || '-'),
         '■ Down Time: ' + dfT(r.dt_start) + ' ~ ' + (dfT(r.dt_end) || '') + (m ? ' (' + m + ')' : ''), '■ 재발 유무: ' + r.recur,
         '■ 문제점(원인)', r.problem || '-', '■ 조치사항', r.action || '-'])
-      .concat(r.etc ? ['■ 기타', r.etc] : []).join('\n');
+      .concat(r.etc ? ['■ 기타', r.etc] : [])
+      .concat((r.photos || []).some(function (p) { return p && p.c; }) ? ['■ 사진 설명'].concat((r.photos || []).map(function (p, i) { return p && p.c ? '사진' + (i + 1) + ': ' + p.c : ''; }).filter(Boolean)) : []).join('\n');
   }
 
   function dfMobile() { try { return !!navigator.share && matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } }
@@ -1478,7 +1545,7 @@
     b.innerHTML = '<div class="df-det"><div class="df-dh"><b>' + esc(dfDay(r.d)) + ' · ' + (r.kind ? esc(r.kind) + ' · ' : '') + esc(r.line) + ' ' + esc(r.proc || '') + '</b>' + (r.recur === '재발' ? '<em class="df-re">재발</em>' : '<em>최초</em>') + '</div>' +
       '<div class="df-dg">' + f('유형', esc(r.kind || '-')) + f('보고자', esc(r.reporter)) + f('제품명', esc(r.product || '-')) + f('Down Time', esc(dfT(r.dt_start)) + ' ~ ' + esc(dfT(r.dt_end) || '') + (m ? ' <small>(' + m + ')</small>' : '')) + f('재발 유무', esc(r.recur)) +
       f('문제점 (원인)', esc(r.problem || '-'), 'w2 pre') + f('조치사항', esc(r.action || '-'), 'w2 pre') + (r.etc ? f('기타', esc(r.etc), 'w2 pre') : '') + '</div>' +
-      (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>'; }).join('') + '</div>' : '') +
+      (ph.length ? '<div class="df-pv" id="dfPv">' + ph.map(function (p, i) { return '<div class="df-pvi"><a class="df-th big" data-i="' + i + '" href="#" target="_blank" rel="noopener"><span>불러오는 중…</span></a>' + (p.c ? '<p>' + esc(p.c) + '</p>' : '') + '</div>'; }).join('') + '</div>' : '') +
       '<div class="df-btns"><button class="btn-p" type="button" id="dfCopy">텍스트 복사</button>' + (dfMobile() ? '<button class="btn-p" type="button" id="dfShareB">공유</button>' : '') + (dfMine(r) ? '<button class="btn-l" type="button" id="dfMailB">다시 발송</button><button class="btn-l" type="button" id="dfEditB">고치기</button><button class="btn-l" type="button" id="dfDel">지우기</button>' : '') + '<button class="btn-l" type="button" id="dfBack">목록으로</button><div id="dfMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc((r.created_at ? '작성 ' + hm(r.created_at) : '') + (r.updated_at && r.created_at && r.updated_at.slice(0, 16) !== r.created_at.slice(0, 16) ? ' · 고침 ' + hm(r.updated_at) : '')) + '</p></div>';
     if (ph.length) client.storage.from('defect').createSignedUrls(ph.map(function (p) { return p.p; }), 3600).then(function (x) {
@@ -1492,7 +1559,7 @@
     if ($('dfShareB')) $('dfShareB').onclick = function () { dfShare(r); };
     if ($('dfEditB')) $('dfEditB').onclick = function () {
       dfEdit = r; dfRec = r.recur; dfKind = r.kind || ''; dfForm.line = r.line;
-      dfFiles = (r.photos || []).map(function (p) { return { path: p.p, w: p.w, h: p.h, url: dfUrls[p.p] || '' }; });
+      dfFiles = (r.photos || []).map(function (p) { return { path: p.p, w: p.w, h: p.h, c: p.c || '', url: dfUrls[p.p] || '' }; });
       dfView = 'new'; dfPaint();
     };
     var arm = false;
