@@ -819,22 +819,23 @@
     }).catch(function (e) { pmCur = null; if ($('plBody')) { pmPaint($('plBody')); say('pmMsg', pmErr(e)); } });
   }
   // 메일 한 통을 A4 가로로 인쇄: 숨긴 창에 제목·보낸 사람·본문만 넣고, 종이 폭(가능하면 한 장)에 맞게 줄여서 인쇄 창을 띄움
-  var PM_PW = 1046, PM_PH = 718;   // A4 가로 297×210mm, 여백 10mm → 96dpi 기준 인쇄 영역(px)
+  var PM_FW = 1122, PM_FH = 793;   // A4 가로 297×210mm → 96dpi 기준 종이 크기(px). 여백 10mm 는 body padding
   function pmPrintDoc(r, html) {
-    return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(r.subject || '생산계획 메일') + '</title><style>@page{size:A4 landscape;margin:10mm}' +
-      'html,body{margin:0;padding:0;background:#fff;color:#141414;font-family:"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}' +
+    return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(r.subject || '생산계획 메일') + '</title><style>@page{size:A4 landscape;margin:0}' +
+      'html,body{margin:0;padding:0;background:#fff;color:#141414;font-family:"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}body{padding:10mm}' +
+      '#pmpFit{display:inline-block;min-width:100%;box-sizing:border-box;border:1.5px solid #141414;padding:12px 14px}' +
       '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}img{max-width:100%;height:auto}' +
       '.pmp-h{font-size:17px;font-weight:800;margin:0 0 2px}.pmp-m{font-size:12px;color:#555;margin:0 0 8px;padding-bottom:6px;border-bottom:1.5px solid #141414}</style></head><body>' +
-      '<div id="pmpFit" style="display:inline-block;min-width:100%"><p class="pmp-h">' + esc(r.subject || '(제목 없음)') + '</p><p class="pmp-m">' + esc([r.from_name && '보낸 사람 ' + r.from_name, r.sent_at && hm(r.sent_at)].filter(Boolean).join('  ·  ')) + '</p>' + html + '</div></body></html>';
+      '<div id="pmpFit"><p class="pmp-h">' + esc(r.subject || '(제목 없음)') + '</p><p class="pmp-m">' + esc([r.from_name && '보낸 사람 ' + r.from_name, r.sent_at && hm(r.sent_at)].filter(Boolean).join('  ·  ')) + '</p>' + html + '</div></body></html>';
   }
   function pmPrintFit(d) {   // 폭이 넘치면 폭에 맞추고, 조금만 줄이면 한 장에 들어갈 때는 한 장으로 (줄이면 줄바꿈이 달라져서 몇 번 다시 잼)
     var box = d.getElementById('pmpFit'), root = d.documentElement; if (!box) return 1;
-    var size = function (z) { root.style.zoom = z; var q = box.getBoundingClientRect(), k = d.defaultView.innerWidth / PM_PW; return { w: Math.max(q.width, box.scrollWidth * (q.width / (box.offsetWidth || 1))) / k, h: q.height / k }; };
+    var size = function (z) { root.style.zoom = z; var q = box.getBoundingClientRect(), k = d.defaultView.innerWidth / PM_FW; return { w: Math.max(q.width, box.scrollWidth * (q.width / (box.offsetWidth || 1))) / k, h: q.height / k }; };
     var run = function (one) {
       var z = 1, s, i;
       for (i = 0; i < 8; i++) {
         s = size(z);
-        var over = Math.max(s.w / PM_PW, one ? s.h / PM_PH : 0);
+        var pad = 76 * z, over = Math.max(s.w / (PM_FW - pad), one ? s.h / (PM_FH - pad - 2) : 0);   // 여백(10mm×2)도 같이 줄어듦
         if (over <= 1.001) return z;
         z = Math.floor(z / over * 0.995 * 1000) / 1000;
         if (z < 0.3) return z;
@@ -849,7 +850,7 @@
   function pmPrint(r, html) {
     var old = $('pmPrintFr'); if (old) old.remove();
     var fr = document.createElement('iframe'); fr.id = 'pmPrintFr'; fr.setAttribute('sandbox', 'allow-same-origin allow-modals'); fr.setAttribute('aria-hidden', 'true');
-    fr.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + PM_PW + 'px;height:' + PM_PH + 'px;border:0;visibility:hidden';
+    fr.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + PM_FW + 'px;height:' + PM_FH + 'px;border:0;visibility:hidden';
     say('pmMsg', '인쇄 준비 중…', true);
     fr.onload = function () {
       var d = fr.contentDocument, ims = [].slice.call(d.images).filter(function (im) { return !im.complete; }), left = ims.length, done = false;
