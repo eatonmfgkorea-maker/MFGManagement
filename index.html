@@ -818,6 +818,54 @@
       });
     }).catch(function (e) { pmCur = null; if ($('plBody')) { pmPaint($('plBody')); say('pmMsg', pmErr(e)); } });
   }
+  // 메일 한 통을 A4 가로로 인쇄: 숨긴 창에 제목·보낸 사람·본문만 넣고, 종이 폭(가능하면 한 장)에 맞게 줄여서 인쇄 창을 띄움
+  var PM_PW = 1046, PM_PH = 718;   // A4 가로 297×210mm, 여백 10mm → 96dpi 기준 인쇄 영역(px)
+  function pmPrintDoc(r, html) {
+    return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(r.subject || '생산계획 메일') + '</title><style>@page{size:A4 landscape;margin:10mm}' +
+      'html,body{margin:0;padding:0;background:#fff;color:#141414;font-family:"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5}' +
+      '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}img{max-width:100%;height:auto}' +
+      '.pmp-h{font-size:17px;font-weight:800;margin:0 0 2px}.pmp-m{font-size:12px;color:#555;margin:0 0 8px;padding-bottom:6px;border-bottom:1.5px solid #141414}</style></head><body>' +
+      '<div id="pmpFit" style="display:inline-block;min-width:100%"><p class="pmp-h">' + esc(r.subject || '(제목 없음)') + '</p><p class="pmp-m">' + esc([r.from_name && '보낸 사람 ' + r.from_name, r.sent_at && hm(r.sent_at)].filter(Boolean).join('  ·  ')) + '</p>' + html + '</div></body></html>';
+  }
+  function pmPrintFit(d) {   // 폭이 넘치면 폭에 맞추고, 조금만 줄이면 한 장에 들어갈 때는 한 장으로 (줄이면 줄바꿈이 달라져서 몇 번 다시 잼)
+    var box = d.getElementById('pmpFit'), root = d.documentElement; if (!box) return 1;
+    var size = function (z) { root.style.zoom = z; var q = box.getBoundingClientRect(), k = d.defaultView.innerWidth / PM_PW; return { w: Math.max(q.width, box.scrollWidth * (q.width / (box.offsetWidth || 1))) / k, h: q.height / k }; };
+    var run = function (one) {
+      var z = 1, s, i;
+      for (i = 0; i < 8; i++) {
+        s = size(z);
+        var over = Math.max(s.w / PM_PW, one ? s.h / PM_PH : 0);
+        if (over <= 1.001) return z;
+        z = Math.floor(z / over * 0.995 * 1000) / 1000;
+        if (z < 0.3) return z;
+      }
+      return z;
+    };
+    var z = run(true);
+    if (z < 0.6) z = run(false);
+    root.style.zoom = z < 1 ? z : '';
+    return z;
+  }
+  function pmPrint(r, html) {
+    var old = $('pmPrintFr'); if (old) old.remove();
+    var fr = document.createElement('iframe'); fr.id = 'pmPrintFr'; fr.setAttribute('sandbox', 'allow-same-origin allow-modals'); fr.setAttribute('aria-hidden', 'true');
+    fr.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + PM_PW + 'px;height:' + PM_PH + 'px;border:0;visibility:hidden';
+    say('pmMsg', '인쇄 준비 중…', true);
+    fr.onload = function () {
+      var d = fr.contentDocument, ims = [].slice.call(d.images).filter(function (im) { return !im.complete; }), left = ims.length, done = false;
+      var go = function () {
+        if (done) return; done = true;
+        try { pmPrintFit(d); fr.contentWindow.focus(); fr.contentWindow.print(); say('pmMsg', '', true); }
+        catch (e) { say('pmMsg', '인쇄 창을 열지 못했습니다: ' + errText(e)); }
+        setTimeout(function () { if (fr.isConnected) fr.remove(); }, 60000);
+      };
+      if (!left) return go();
+      ims.forEach(function (im) { var f = function () { if (--left <= 0) go(); }; im.addEventListener('load', f); im.addEventListener('error', f); });
+      setTimeout(go, 8000);
+    };
+    document.body.appendChild(fr);
+    fr.srcdoc = pmPrintDoc(r, html);
+  }
   function pmPaintDet(b) {
     var r = pmCur, fs = r.files || [], u = r._u || {}, byCid = {};
     fs.forEach(function (f) { if (f.cid && u[f.p]) byCid[f.cid] = u[f.p]; });
@@ -830,13 +878,14 @@
       '<iframe id="pmBody" class="pm-body" sandbox="allow-same-origin allow-popups" title="메일 본문"></iframe>' +
       (imgs.length ? '<h3 class="pm-sub">사진 ' + imgs.length + '장' + (imgs.length > 1 ? '<button class="btn-l" type="button" id="pmAll">모두 내려받기</button>' : '') + '</h3><div class="pm-fl">' + imgs.map(fileRow).join('') + '</div>' : '') +
       (etc.length ? '<h3 class="pm-sub">첨부 파일 ' + etc.length + '개</h3><div class="pm-fl">' + etc.map(fileRow).join('') + '</div>' : '') +
-      '<div class="df-btns"><button class="btn-p" type="button" id="pmlBack">목록으로</button>' + (mine ? '<button class="btn-l" type="button" id="pmDel">지우기</button>' : '') + '<div id="pmMsg" class="msg"></div></div>' +
+      '<div class="df-btns"><button class="btn-p" type="button" id="pmlBack">목록으로</button><button class="btn-p" type="button" id="pmPrint">인쇄</button>' + (mine ? '<button class="btn-l" type="button" id="pmDel">지우기</button>' : '') + '<div id="pmMsg" class="msg"></div></div>' +
       '<p class="act-note">' + esc('올린 시각 ' + hm(r.created_at)) + '</p></div>';
     var html = String(r.body_html || '').replace(/cid:([^"'\s>)]+)/gi, function (all, c) { return byCid[c] || byCid[decodeURIComponent(c)] || all; });
     var fr = $('pmBody'), fit = function () { try { var d = fr.contentDocument; if (d && d.documentElement) fr.style.height = Math.max(120, d.documentElement.scrollHeight + 8) + 'px'; } catch (e) {} };
     fr.onload = function () { fit(); try { [].slice.call(fr.contentDocument.images).forEach(function (im) { im.addEventListener('load', fit); im.addEventListener('error', fit); }); } catch (e) {} setTimeout(fit, 600); };
     fr.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><style>html,body{margin:0;padding:0;background:#fff;color:#141414;font-family:"Malgun Gothic",sans-serif;font-size:14px;line-height:1.5;overflow-wrap:anywhere}body{padding:14px}img{max-width:100%;height:auto}table{max-width:100%}</style></head><body>' + html + '</body></html>';
     $('pmlBack').onclick = function () { pmCur = null; pmPaint($('plBody')); };
+    $('pmPrint').onclick = function () { pmPrint(r, html); };
     if ($('pmAll')) $('pmAll').onclick = function () {
       imgs.forEach(function (f, i) { var h = dl(f); if (h) setTimeout(function () { var a = document.createElement('a'); a.href = h; a.download = f.name || ''; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); }, i * 500); });
       say('pmMsg', '사진 ' + imgs.length + '장을 내려받는 중… (브라우저가 «여러 파일 다운로드»를 물으면 허용)', true);
